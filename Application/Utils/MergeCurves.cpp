@@ -3,6 +3,31 @@
 #include "Utils/IMatrixOperations.h"
 #include "Curve3D/CalcCurve.h"
 
+// Рекурсивные методы рассчёта производных, предназначенных для дальнейшего соединения кривых Безье
+Point3D calcDerivLeftBezierCurveForMerger(const std::vector<Point3D>& points, int currentIndex, int startIndex)
+{
+    if(startIndex == currentIndex)
+        return points[currentIndex];
+    else
+        return calcDerivLeftBezierCurveForMerger(points, currentIndex + 1, startIndex) - calcDerivLeftBezierCurveForMerger(points, currentIndex, startIndex - 1);
+}
+
+Point3D calcNegativeDerivLeftBezierCurveForMerger(const std::vector<Point3D>& points, int currentIndex, int startIndex)
+{
+    if(startIndex == currentIndex)
+        return -1 * points[currentIndex];
+    else
+        return calcNegativeDerivLeftBezierCurveForMerger(points, currentIndex + 1, startIndex)  - calcNegativeDerivLeftBezierCurveForMerger(points, currentIndex, startIndex - 1);
+}
+
+Point3D calcDerivRightBezierCurveForMerger(const std::vector<Point3D>& points, int currentIndex, int startIndex)
+{
+    if(startIndex == currentIndex)
+        return points[currentIndex];
+    else
+        return calcDerivRightBezierCurveForMerger(points, currentIndex, startIndex + 1) - calcDerivRightBezierCurveForMerger(points, currentIndex - 1, startIndex);
+}
+
 Curve MergeCurves::attachCurves(const Curve &curve1, const Curve &curve2, bool fixateStartEndPoints)
 {
     std::vector<Point3D> controlPointsFirstCurve = curve1.getControlPoints();
@@ -216,21 +241,21 @@ std::vector<Curve> MergeCurves::attachBSplines(std::vector<Curve>& bezierCurves)
    matrix_a3[13][3] = N_101; matrix_a3[13][4] = N_111; matrix_a3[13][5] = N_121; matrix_a3[13][6] = -N_100; matrix_a3[13][7] = -N_110; matrix_a3[13][8] = -N_120;
    matrix_a3[14][3] = N_201; matrix_a3[14][4] = N_211; matrix_a3[14][5] = N_221; matrix_a3[14][6] = -N_200; matrix_a3[14][7] = -N_210; matrix_a3[14][8] = -N_220;
 
-   const int COUNT_BSPLINES = static_cast<int>(bezierCurves.size());
-   std::vector<std::vector<Point3D>> controlPointsBSplines (COUNT_BSPLINES, std::vector<Point3D>());
+   const size_t COUNT_BEZIER_CURVES = bezierCurves.size();
+   std::vector<std::vector<Point3D>> controlPointsBezierCurves (COUNT_BEZIER_CURVES, std::vector<Point3D>());
 
-   for (int i = 0; i != COUNT_BSPLINES; ++i)
+   for (size_t i = 0; i != COUNT_BEZIER_CURVES; ++i)
    {
-        controlPointsBSplines[i] = bezierCurves[i].getControlPoints();
+        controlPointsBezierCurves[i] = bezierCurves[i].getControlPoints();
    }
 
-   matrix_b3[9] = controlPointsBSplines[0][0] * -N_001 - controlPointsBSplines[0][1] * N_011 - controlPointsBSplines[0][2] * N_021 + controlPointsBSplines[1][0] * N_000 + controlPointsBSplines[1][1] * N_010 + controlPointsBSplines[1][2] * N_020;
-   matrix_b3[10] = controlPointsBSplines[0][0] * -N_101 - controlPointsBSplines[0][1] * N_111 - controlPointsBSplines[0][2] * N_121 + controlPointsBSplines[1][0] * N_100 + controlPointsBSplines[1][1] * N_110 + controlPointsBSplines[1][2] * N_120;
-   matrix_b3[11] = controlPointsBSplines[0][0] * -N_201 - controlPointsBSplines[0][1] * N_211 - controlPointsBSplines[0][2] * N_221 + controlPointsBSplines[1][0] * N_200 + controlPointsBSplines[1][1] * N_210 + controlPointsBSplines[1][2] * N_220;
+   matrix_b3[9] = controlPointsBezierCurves[0][0] * -N_001 - controlPointsBezierCurves[0][1] * N_011 - controlPointsBezierCurves[0][2] * N_021 + controlPointsBezierCurves[1][0] * N_000 + controlPointsBezierCurves[1][1] * N_010 + controlPointsBezierCurves[1][2] * N_020;
+   matrix_b3[10] = controlPointsBezierCurves[0][0] * -N_101 - controlPointsBezierCurves[0][1] * N_111 - controlPointsBezierCurves[0][2] * N_121 + controlPointsBezierCurves[1][0] * N_100 + controlPointsBezierCurves[1][1] * N_110 + controlPointsBezierCurves[1][2] * N_120;
+   matrix_b3[11] = controlPointsBezierCurves[0][0] * -N_201 - controlPointsBezierCurves[0][1] * N_211 - controlPointsBezierCurves[0][2] * N_221 + controlPointsBezierCurves[1][0] * N_200 + controlPointsBezierCurves[1][1] * N_210 + controlPointsBezierCurves[1][2] * N_220;
 
-   matrix_b3[12] = controlPointsBSplines[1][0] * -N_001 - controlPointsBSplines[1][1] * N_011 - controlPointsBSplines[1][2] * N_021 + controlPointsBSplines[2][0] * N_000 + controlPointsBSplines[2][1] * N_010 + controlPointsBSplines[2][2] * N_020;
-   matrix_b3[13] = controlPointsBSplines[1][0] * -N_101 - controlPointsBSplines[1][1] * N_111 - controlPointsBSplines[1][2] * N_121 + controlPointsBSplines[2][0] * N_100 + controlPointsBSplines[2][1] * N_110 + controlPointsBSplines[2][2] * N_120;
-   matrix_b3[14] = controlPointsBSplines[1][0] * -N_201 - controlPointsBSplines[1][1] * N_211 - controlPointsBSplines[1][2] * N_221 + controlPointsBSplines[2][0] * N_200 + controlPointsBSplines[2][1] * N_210 + controlPointsBSplines[2][2] * N_220;
+   matrix_b3[12] = controlPointsBezierCurves[1][0] * -N_001 - controlPointsBezierCurves[1][1] * N_011 - controlPointsBezierCurves[1][2] * N_021 + controlPointsBezierCurves[2][0] * N_000 + controlPointsBezierCurves[2][1] * N_010 + controlPointsBezierCurves[2][2] * N_020;
+   matrix_b3[13] = controlPointsBezierCurves[1][0] * -N_101 - controlPointsBezierCurves[1][1] * N_111 - controlPointsBezierCurves[1][2] * N_121 + controlPointsBezierCurves[2][0] * N_100 + controlPointsBezierCurves[2][1] * N_110 + controlPointsBezierCurves[2][2] * N_120;
+   matrix_b3[14] = controlPointsBezierCurves[1][0] * -N_201 - controlPointsBezierCurves[1][1] * N_211 - controlPointsBezierCurves[1][2] * N_221 + controlPointsBezierCurves[2][0] * N_200 + controlPointsBezierCurves[2][1] * N_210 + controlPointsBezierCurves[2][2] * N_220;
 
    auto operation = IMatrixOperations::GetMatrixOperationsClass(OperationClass::eigen); // Создаём указатель на интерфейс операций СЛАУ
 
@@ -240,30 +265,33 @@ std::vector<Curve> MergeCurves::attachBSplines(std::vector<Curve>& bezierCurves)
         return {};
    }
 
-   std::vector<Point3D> ans = operation->solveEquation(matrix_a3, matrix_b3); // Решаем СЛАУ
+   std::vector<Point3D> solution = operation->solveEquation(matrix_a3, matrix_b3); // Решаем СЛАУ
    // int rankMatrixA = operation->getMatrixRank(matrix_a3);
    // double detMatrixA = operation->getMatrixDet(matrix_a3);
 
    int tempCounter = 0;
 
-   for (int i = 0; i != COUNT_BSPLINES; ++i)
+   // Регулируем котрольные точки Безье кривых для сопряжения
+   for (size_t i = 0; i != COUNT_BEZIER_CURVES; ++i)
    {
-        for (size_t j = 0; j != controlPointsBSplines[i].size(); ++j)
+        for (size_t j = 0; j != controlPointsBezierCurves[i].size(); ++j)
         {
-            controlPointsBSplines[i][j] += ans[tempCounter++];
+            controlPointsBezierCurves[i][j] += solution[tempCounter++];
         }
    }
 
-   std::vector<Curve> newBsplines;
-   const std::vector<double> weightsBezierCurves(controlPointsBSplines[0].size(), 1);   // Весовые коэффициенты контрольных точек
+   std::vector<Curve> newBezierCurves;
+   const std::vector<double> WEIGHTS(controlPointsBezierCurves[0].size(), 1);   // Весовые коэффициенты (у всех кривых Безье одинаковые)
+   const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
+   const int DEGREE = bezierCurves[0].getDegree(); // Степень кривой (у всех кривых Безье одинаковые)
 
-   for (int i = 0; i != COUNT_BSPLINES; ++i)
+   for (size_t i = 0; i != COUNT_BEZIER_CURVES; ++i) // Создаём новые кривые Безье и добавляем в вектор, чтобы функция возвратила его
    {
-        Curve temp1(controlPointsBSplines[i], weightsBezierCurves, bezierCurves[0].getDegree(), 61);
-        newBsplines.push_back(temp1);
+        Curve tempCurve(controlPointsBezierCurves[i], WEIGHTS, DEGREE, CURVE_NUM_POINTS);
+        newBezierCurves.push_back(tempCurve);
    }
 
-   return newBsplines;
+   return newBezierCurves;
 }
 
 /*
@@ -395,27 +423,3 @@ std::vector<Curve> MergeCurves::attachBSplines(std::vector<Curve>& bezierCurves)
    return newBsplines;
 }
 */
-
-Point3D MergeCurves::calcDerivLeftBezierCurveForMerger(const std::vector<Point3D>& points, int currentIndex, int startIndex)
-{
-    if(startIndex == currentIndex)
-        return points[currentIndex];
-    else
-        return calcDerivLeftBezierCurveForMerger(points, currentIndex + 1, startIndex) - calcDerivLeftBezierCurveForMerger(points, currentIndex, startIndex - 1);
-}
-
-Point3D MergeCurves::calcNegativeDerivLeftBezierCurveForMerger(const std::vector<Point3D>& points, int currentIndex, int startIndex)
-{
-    if(startIndex == currentIndex)
-        return -1 * points[currentIndex];
-    else
-        return calcNegativeDerivLeftBezierCurveForMerger(points, currentIndex + 1, startIndex)  - calcNegativeDerivLeftBezierCurveForMerger(points, currentIndex, startIndex - 1);
-}
-
-Point3D MergeCurves::calcDerivRightBezierCurveForMerger(const std::vector<Point3D>& points, int currentIndex, int startIndex)
-{
-    if(startIndex == currentIndex)
-        return points[currentIndex];
-    else
-        return calcDerivRightBezierCurveForMerger(points, currentIndex, startIndex + 1) - calcDerivRightBezierCurveForMerger(points, currentIndex - 1, startIndex);
-}
