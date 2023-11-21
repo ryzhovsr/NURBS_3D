@@ -187,48 +187,45 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
     const double SIZE_MATRIX = 15; // Почему 15 - разобраться
 
     std::vector<std::vector<double>> coefficients(SIZE_MATRIX, std::vector<double>(SIZE_MATRIX));
-    std::vector<Point3D> freeMembers(SIZE_MATRIX);
 
     bool fixStartPoint = true;  // Фиксация первой граничной точки
-    bool fixEndPoint = false;   // Фиксация последней граничной точки
+    bool fixEndPoint = true;    // Фиксация последней граничной точки
 
-    bool fixFirstDivEndPoint = true;    // Фиксация первой производной первой граничной точки
-    bool fixFirstDivStartPoint = false; // Фиксация первой производной последней граничной точки
+    bool fixFirstDivStartPoint = false; // Фиксация первой производной первой граничной точки
+    bool fixFirstDivEndPoint = false;   // Фиксация первой производной последней граничной точки
 
-   // Заполняем матрицу коэффициентами
-   coefficients[0][0] = 2; coefficients[0][9] = N_001; coefficients[0][10] = N_101; coefficients[0][11] = N_201;
+    const size_t EPSILON_COUNT = bezierCurves.size() * bezierCurves[0].getControlPoints().size();
 
-   if (fixStartPoint == true)
+    // Заполняем матрицу коэффициентами
+    for (size_t i = 0; i != EPSILON_COUNT; ++i) // Заполняем двойками по главной диагонали
+    {
+        coefficients[i][i] = 2;
+    }
+
+   if (fixStartPoint == false)
    {
-        coefficients[0][9] = 0; coefficients[0][10] = 0; coefficients[0][11] = 0;
+        coefficients[0][9] = N_001; coefficients[0][10] = N_101; coefficients[0][11] = N_201;
+   }
+   if (fixFirstDivStartPoint == false)
+   {
+        coefficients[1][9] = N_011; coefficients[1][10] = N_111; coefficients[1][11] = N_211;
    }
 
-   coefficients[1][1] = 2; coefficients[1][9] = N_011; coefficients[1][10] = N_111; coefficients[1][11] = N_211;
+   coefficients[2][9] = N_021; coefficients[2][10] = N_121; coefficients[2][11] = N_221;
 
-   if (fixFirstDivStartPoint == true)
+   coefficients[3][9] = -N_000; coefficients[3][10] = -N_100; coefficients[3][11] = -N_200; coefficients[3][12] = N_001; coefficients[3][13] = N_101; coefficients[3][14] = N_201;
+   coefficients[4][9] = -N_010; coefficients[4][10] = -N_110; coefficients[4][11] = -N_210; coefficients[4][12] = N_011; coefficients[4][13] = N_111; coefficients[4][14] = N_211;
+   coefficients[5][9] = -N_020; coefficients[5][10] = -N_120; coefficients[5][11] = -N_220; coefficients[5][12] = N_021; coefficients[5][13] = N_121; coefficients[5][14] = N_221;
+
+   coefficients[6][12] = -N_000; coefficients[6][13] = -N_100; coefficients[6][14] = -N_200;
+
+   if (fixEndPoint == false)
    {
-        coefficients[1][9] = 0; coefficients[1][10] = 0; coefficients[1][11] = 0;
+        coefficients[8][12] = -N_020; coefficients[8][13] = -N_120; coefficients[8][14] = -N_220;
    }
-
-   coefficients[2][2] = 2; coefficients[2][9] = N_021; coefficients[2][10] = N_121; coefficients[2][11] = N_221;
-
-   coefficients[3][3] = 2; coefficients[3][9] = -N_000; coefficients[3][10] = -N_100; coefficients[3][11] = -N_200; coefficients[3][12] = N_001; coefficients[3][13] = N_101; coefficients[3][14] = N_201;
-   coefficients[4][4] = 2; coefficients[4][9] = -N_010; coefficients[4][10] = -N_110; coefficients[4][11] = -N_210; coefficients[4][12] = N_011; coefficients[4][13] = N_111; coefficients[4][14] = N_211;
-   coefficients[5][5] = 2; coefficients[5][9] = -N_020; coefficients[5][10] = -N_120; coefficients[5][11] = -N_220; coefficients[5][12] = N_021; coefficients[5][13] = N_121; coefficients[5][14] = N_221;
-
-   coefficients[6][6] = 2; coefficients[6][12] = -N_000; coefficients[6][13] = -N_100; coefficients[6][14] = -N_200;
-   coefficients[7][7] = 2; coefficients[7][12] = -N_010; coefficients[7][13] = -N_110; coefficients[7][14] = -N_210;
-
-   if (fixEndPoint == true)
+   if (fixFirstDivEndPoint == false)
    {
-        coefficients[7][12] = 0; coefficients[7][13] = 0; coefficients[7][14] = 0;
-   }
-
-   coefficients[8][8] = 2; coefficients[8][11] = -N_020; coefficients[8][12] = -N_120; coefficients[8][14] = -N_220;
-
-   if (fixFirstDivEndPoint == true)
-   {
-        coefficients[8][12] = 0; coefficients[8][13] = 0; coefficients[8][14] = 0;
+        coefficients[7][12] = -N_010; coefficients[7][13] = -N_110; coefficients[7][14] = -N_210;
    }
 
    coefficients[9][0] = N_001; coefficients[9][1] = N_011; coefficients[9][2] = N_021; coefficients[9][3] = -N_000; coefficients[9][4] = -N_010; coefficients[9][5] = -N_020;
@@ -246,6 +243,8 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
    {
         controlPointsBezierCurves[i] = bezierCurves[i].getControlPoints();
    }
+
+   std::vector<Point3D> freeMembers(SIZE_MATRIX);
 
    freeMembers[9] = controlPointsBezierCurves[0][0] * -N_001 - controlPointsBezierCurves[0][1] * N_011 - controlPointsBezierCurves[0][2] * N_021 + controlPointsBezierCurves[1][0] * N_000 + controlPointsBezierCurves[1][1] * N_010 + controlPointsBezierCurves[1][2] * N_020;
    freeMembers[10] = controlPointsBezierCurves[0][0] * -N_101 - controlPointsBezierCurves[0][1] * N_111 - controlPointsBezierCurves[0][2] * N_121 + controlPointsBezierCurves[1][0] * N_100 + controlPointsBezierCurves[1][1] * N_110 + controlPointsBezierCurves[1][2] * N_120;

@@ -1395,7 +1395,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     MergeCurves merge;
     std::vector<Curve> newBsplines = merge.attachAllBezierCurves(bezierCurves);
-    // 3.
 
     for (size_t i = 0; i != newBsplines.size(); ++i)
     {
