@@ -219,13 +219,13 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
    coefficients[6][12] = -N_000; coefficients[6][13] = -N_100; coefficients[6][14] = -N_200;
 
-   if (fixEndPoint == false)
-   {
-        coefficients[8][12] = -N_020; coefficients[8][13] = -N_120; coefficients[8][14] = -N_220;
-   }
    if (fixFirstDivEndPoint == false)
    {
         coefficients[7][12] = -N_010; coefficients[7][13] = -N_110; coefficients[7][14] = -N_210;
+   }
+   if (fixEndPoint == false)
+   {
+        coefficients[8][12] = -N_020; coefficients[8][13] = -N_120; coefficients[8][14] = -N_220;
    }
 
    coefficients[9][0] = N_001; coefficients[9][1] = N_011; coefficients[9][2] = N_021; coefficients[9][3] = -N_000; coefficients[9][4] = -N_010; coefficients[9][5] = -N_020;
