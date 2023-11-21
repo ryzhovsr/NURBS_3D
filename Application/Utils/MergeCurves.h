@@ -5,8 +5,10 @@
 class MergeCurves
 {
 public:
-    Curve attachCurves(const Curve &curve1, const Curve &curve2, bool fixateStartEndPoints);
+    // Соединяет две кривые Безье
+    Curve attachTwoBezierCurves(const Curve &curve1, const Curve &curve2, bool fixateStartEndPoints);
 
-    std::vector<Curve> attachBSplines(std::vector<Curve> &bezierCurves);
+    // Соединяет все кривые Безье в векторе
+    std::vector<Curve> attachAllBezierCurves(std::vector<Curve> &bezierCurves);
 };
 

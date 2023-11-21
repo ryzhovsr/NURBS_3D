@@ -1394,7 +1394,7 @@ MainWindow::MainWindow(QWidget *parent)
     std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3};
 
     MergeCurves merge;
-    std::vector<Curve> newBsplines = merge.attachBSplines(bezierCurves);
+    std::vector<Curve> newBsplines = merge.attachAllBezierCurves(bezierCurves);
     // 3.
 
     for (size_t i = 0; i != newBsplines.size(); ++i)
