@@ -166,77 +166,215 @@ Curve MergeCurves::attachTwoBezierCurves(const Curve &curve1, const Curve &curve
 
 std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezierCurves)
 {
-    // Находим базисные функции у первой кривой в начальной точке
-    double parameter = 0;
+    // Находим базисные функции у первой кривой в конечной точке (базисные функции у всех кривых одинаковые)
+    double parameter = 1;
     int span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
     std::vector<std::vector<double>> basisFuncsAndTheirDerivs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
 
-    double N_000 = basisFuncsAndTheirDerivs[0][0], N_010 = basisFuncsAndTheirDerivs[0][1], N_020 = basisFuncsAndTheirDerivs[0][2]; // НУЛЕВЫЕ ПРОИЗВОДНЫЕ = сама функция
-    double N_100 = basisFuncsAndTheirDerivs[1][0], N_110 = basisFuncsAndTheirDerivs[1][1], N_120 = basisFuncsAndTheirDerivs[1][2]; // ПЕРВЫЕ ПРОИЗВОДНЫЕ
-    double N_200 = basisFuncsAndTheirDerivs[2][0], N_210 = basisFuncsAndTheirDerivs[2][1], N_220 = basisFuncsAndTheirDerivs[2][2]; // ВТОРЫЕ ПРОИЗВОДНЫЕ
-
-    // Находим базисные функции у первой кривой в конечной точке
-    parameter = 1;
-    span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
-    basisFuncsAndTheirDerivs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
-
-    double N_001 = basisFuncsAndTheirDerivs[0][0], N_011 = basisFuncsAndTheirDerivs[0][1], N_021 = basisFuncsAndTheirDerivs[0][2]; // НУЛЕВЫЕ ПРОИЗВОДНЫЕ = сама функция
-    double N_101 = basisFuncsAndTheirDerivs[1][0], N_111 = basisFuncsAndTheirDerivs[1][1], N_121 = basisFuncsAndTheirDerivs[1][2]; // ПЕРВЫЕ ПРОИЗВОДНЫЕ
-    double N_201 = basisFuncsAndTheirDerivs[2][0], N_211 = basisFuncsAndTheirDerivs[2][1], N_221 = basisFuncsAndTheirDerivs[2][2]; // ВТОРЫЕ ПРОИЗВОДНЫЕ
-
     const double SIZE_MATRIX = 15; // Почему 15 - разобраться
-
-    std::vector<std::vector<double>> coefficients(SIZE_MATRIX, std::vector<double>(SIZE_MATRIX));
-
-    bool fixStartPoint = true;  // Фиксация первой граничной точки
-    bool fixEndPoint = true;    // Фиксация последней граничной точки
-
-    bool fixFirstDivStartPoint = false; // Фиксация первой производной первой граничной точки
-    bool fixFirstDivEndPoint = false;   // Фиксация первой производной последней граничной точки
-
-    const size_t EPSILON_COUNT = bezierCurves.size() * bezierCurves[0].getControlPoints().size();
+    std::vector<std::vector<double>> coefficients(SIZE_MATRIX, std::vector<double>(SIZE_MATRIX)); // Матрица коэффициентов
+    const size_t COUNT_EPSILONS = bezierCurves.size() * bezierCurves[0].getControlPoints().size(); // Количество эпсилон для СЛАУ
 
     // Заполняем матрицу коэффициентами
-    for (size_t i = 0; i != EPSILON_COUNT; ++i) // Заполняем двойками по главной диагонали
+    for (size_t i = 0; i != COUNT_EPSILONS; ++i) // Заполняем двойками по главной диагонали
     {
         coefficients[i][i] = 2;
     }
 
-   if (fixStartPoint == false)
-   {
-        coefficients[0][9] = N_001; coefficients[0][10] = N_101; coefficients[0][11] = N_201;
-   }
-   if (fixFirstDivStartPoint == false)
-   {
-        coefficients[1][9] = N_011; coefficients[1][10] = N_111; coefficients[1][11] = N_211;
-   }
+    size_t reverseRow = basisFuncsAndTheirDerivs[0].size() * 2 - 1;
+    size_t colBasisFunc = 0;
 
-   coefficients[2][9] = N_021; coefficients[2][10] = N_121; coefficients[2][11] = N_221;
+    for (size_t row = 0; row != basisFuncsAndTheirDerivs.size(); ++row) // Итерируемся по общему числу базисных функций
+    {
+        size_t rowBasisFunc = 0;
+        double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
 
-   coefficients[3][9] = -N_000; coefficients[3][10] = -N_100; coefficients[3][11] = -N_200; coefficients[3][12] = N_001; coefficients[3][13] = N_101; coefficients[3][14] = N_201;
-   coefficients[4][9] = -N_010; coefficients[4][10] = -N_110; coefficients[4][11] = -N_210; coefficients[4][12] = N_011; coefficients[4][13] = N_111; coefficients[4][14] = N_211;
-   coefficients[5][9] = -N_020; coefficients[5][10] = -N_120; coefficients[5][11] = -N_220; coefficients[5][12] = N_021; coefficients[5][13] = N_121; coefficients[5][14] = N_221;
+        for (size_t col = COUNT_EPSILONS; col != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++col) // Итерируемся по общему числу производных базисных функций
+        {
+            double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+            coefficients[row][col] = basisFuncVal;
 
-   coefficients[6][12] = -N_000; coefficients[6][13] = -N_100; coefficients[6][14] = -N_200;
+            if (basisFuncVal != 0)
+            {
+                if (prevBasisFuncVal < 0 && basisFuncVal < 0) // Если предыдущий был отрицательным и следующий тоже отрицательный
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal > 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal == 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+            }
 
-   if (fixFirstDivEndPoint == false)
-   {
-        coefficients[7][12] = -N_010; coefficients[7][13] = -N_110; coefficients[7][14] = -N_210;
-   }
-   if (fixEndPoint == false)
-   {
-        coefficients[8][12] = -N_020; coefficients[8][13] = -N_120; coefficients[8][14] = -N_220;
-   }
+            coefficients[reverseRow][col] = basisFuncVal;
+            prevBasisFuncVal = basisFuncVal;
 
-   coefficients[9][0] = N_001; coefficients[9][1] = N_011; coefficients[9][2] = N_021; coefficients[9][3] = -N_000; coefficients[9][4] = -N_010; coefficients[9][5] = -N_020;
-   coefficients[10][0] = N_101; coefficients[10][1] = N_111; coefficients[10][2] = N_121; coefficients[10][3] = -N_100; coefficients[10][4] = -N_110; coefficients[10][5] = -N_120;
-   coefficients[11][0] = N_201; coefficients[11][1] = N_211; coefficients[11][2] = N_221; coefficients[11][3] = -N_200; coefficients[11][4] = -N_210; coefficients[11][5] = -N_220;
+            ++rowBasisFunc;
+        }
 
-   coefficients[12][3] = N_001; coefficients[12][4] = N_011; coefficients[12][5] = N_021; coefficients[12][6] = -N_000; coefficients[12][7] = -N_010; coefficients[12][8] = -N_020;
-   coefficients[13][3] = N_101; coefficients[13][4] = N_111; coefficients[13][5] = N_121; coefficients[13][6] = -N_100; coefficients[13][7] = -N_110; coefficients[13][8] = -N_120;
-   coefficients[14][3] = N_201; coefficients[14][4] = N_211; coefficients[14][5] = N_221; coefficients[14][6] = -N_200; coefficients[14][7] = -N_210; coefficients[14][8] = -N_220;
+        --reverseRow;
+        ++colBasisFunc;
+    }
 
-   const size_t COUNT_BEZIER_CURVES = bezierCurves.size();
+    reverseRow = basisFuncsAndTheirDerivs[0].size() * 3 - 1;
+    colBasisFunc = 0;
+
+    for (size_t row = basisFuncsAndTheirDerivs.size(); row != basisFuncsAndTheirDerivs.size() * 2; ++row) // Итерируемся по общему числу базисных функций
+    {
+        size_t rowBasisFunc = 0;
+        double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+
+        for (size_t col = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size() * 2; ++col) // Итерируемся по общему числу производных базисных функций
+        {
+            double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+            coefficients[row][col] = basisFuncVal;
+
+            if (basisFuncVal != 0)
+            {
+                if (prevBasisFuncVal < 0 && basisFuncVal < 0) // Если предыдущий был отрицательным и следующий тоже отрицательный
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal > 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal == 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+            }
+
+            prevBasisFuncVal = basisFuncVal;
+            coefficients[reverseRow][col] = basisFuncVal;
+
+            ++rowBasisFunc;
+        }
+
+        --reverseRow;
+        ++colBasisFunc;
+    }
+
+    size_t rowBasisFunc = 0;
+
+    for (size_t row = COUNT_EPSILONS; row != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++row) // Итерируемся по общему числу базисных функций
+    {
+        size_t reverseCol = basisFuncsAndTheirDerivs[0].size() * 2 - 1;
+        size_t colBasisFunc = 0;
+        double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+
+        for (size_t col = 0; col !=  basisFuncsAndTheirDerivs.size(); ++col) // Итерируемся по общему числу производных базисных функций
+        {
+            double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+            coefficients[row][col] = basisFuncVal;
+
+            if (basisFuncVal != 0)
+            {
+                if (prevBasisFuncVal < 0 && basisFuncVal < 0) // Если предыдущий был отрицательным и следующий тоже отрицательный
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal > 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal == 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+            }
+
+            prevBasisFuncVal = basisFuncVal;
+            coefficients[row][reverseCol] = basisFuncVal;
+
+            ++colBasisFunc;
+            --reverseCol;
+        }
+
+        ++rowBasisFunc;
+    }
+
+    rowBasisFunc = 0;
+
+    for (size_t row = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); row != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size() * 2; ++row) // Итерируемся по общему числу базисных функций
+    {
+        size_t reverseCol = basisFuncsAndTheirDerivs[0].size() * 3 - 1;
+        size_t colBasisFunc = 0;
+        double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+
+        for (size_t col = basisFuncsAndTheirDerivs[0].size(); col !=  basisFuncsAndTheirDerivs.size() * 2; ++col) // Итерируемся по общему числу производных базисных функций
+        {
+            double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+            coefficients[row][col] = basisFuncVal;
+
+            if (basisFuncVal != 0)
+            {
+                if (prevBasisFuncVal < 0 && basisFuncVal < 0) // Если предыдущий был отрицательным и следующий тоже отрицательный
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal > 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+                else if (prevBasisFuncVal == 0 && basisFuncVal > 0)
+                {
+                    basisFuncVal *= -1;
+                }
+            }
+
+            prevBasisFuncVal = basisFuncVal;
+            coefficients[row][reverseCol] = basisFuncVal;
+
+            ++colBasisFunc;
+            --reverseCol;
+        }
+
+        ++rowBasisFunc;
+    }
+
+    bool fixStartPoint = true;  // Фиксация первой граничной точки
+    bool fixEndPoint = true;    // Фиксация последней граничной точки
+    bool fixFirstDivStartPoint = false; // Фиксация первой производной первой граничной точки
+    bool fixFirstDivEndPoint = false;   // Фиксация первой производной последней граничной точки
+
+    if (fixStartPoint) // Фиксация первой граничной точки
+    {
+        for (size_t i = COUNT_EPSILONS; i != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++i)
+        {
+            coefficients[0][i] = 0;
+        }
+    }
+
+    if (fixFirstDivStartPoint) // Фиксация первой производной первой граничной точки
+    {
+        for (size_t i = COUNT_EPSILONS; i != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++i)
+        {
+            coefficients[1][i] = 0;
+        }
+    }
+
+    if (fixFirstDivEndPoint) // Фиксация первой производной последней граничной точки
+    {
+        for (size_t col = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != coefficients[0].size(); ++col)
+        {
+            coefficients[COUNT_EPSILONS - 2][col] = 0;
+        }
+    }
+
+    if (fixEndPoint) // Фиксация последней граничной точки
+    {
+        for (size_t col = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != coefficients[0].size(); ++col)
+        {
+            coefficients[COUNT_EPSILONS - 1][col] = 0;
+        }
+    }
+
+   const size_t COUNT_BEZIER_CURVES = bezierCurves.size(); // Количество Безье кривых
    std::vector<std::vector<Point3D>> controlPointsBezierCurves (COUNT_BEZIER_CURVES, std::vector<Point3D>());
 
    for (size_t i = 0; i != COUNT_BEZIER_CURVES; ++i)
@@ -245,14 +383,36 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
    }
 
    std::vector<Point3D> freeMembers(SIZE_MATRIX);
+   size_t indexFreeMembers = COUNT_EPSILONS;
 
-   freeMembers[9] = controlPointsBezierCurves[0][0] * -N_001 - controlPointsBezierCurves[0][1] * N_011 - controlPointsBezierCurves[0][2] * N_021 + controlPointsBezierCurves[1][0] * N_000 + controlPointsBezierCurves[1][1] * N_010 + controlPointsBezierCurves[1][2] * N_020;
-   freeMembers[10] = controlPointsBezierCurves[0][0] * -N_101 - controlPointsBezierCurves[0][1] * N_111 - controlPointsBezierCurves[0][2] * N_121 + controlPointsBezierCurves[1][0] * N_100 + controlPointsBezierCurves[1][1] * N_110 + controlPointsBezierCurves[1][2] * N_120;
-   freeMembers[11] = controlPointsBezierCurves[0][0] * -N_201 - controlPointsBezierCurves[0][1] * N_211 - controlPointsBezierCurves[0][2] * N_221 + controlPointsBezierCurves[1][0] * N_200 + controlPointsBezierCurves[1][1] * N_210 + controlPointsBezierCurves[1][2] * N_220;
+   parameter = 0;
+   span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
+   std::vector<std::vector<double>> basisFuncsAndTheirDerivsRev = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
 
-   freeMembers[12] = controlPointsBezierCurves[1][0] * -N_001 - controlPointsBezierCurves[1][1] * N_011 - controlPointsBezierCurves[1][2] * N_021 + controlPointsBezierCurves[2][0] * N_000 + controlPointsBezierCurves[2][1] * N_010 + controlPointsBezierCurves[2][2] * N_020;
-   freeMembers[13] = controlPointsBezierCurves[1][0] * -N_101 - controlPointsBezierCurves[1][1] * N_111 - controlPointsBezierCurves[1][2] * N_121 + controlPointsBezierCurves[2][0] * N_100 + controlPointsBezierCurves[2][1] * N_110 + controlPointsBezierCurves[2][2] * N_120;
-   freeMembers[14] = controlPointsBezierCurves[1][0] * -N_201 - controlPointsBezierCurves[1][1] * N_211 - controlPointsBezierCurves[1][2] * N_221 + controlPointsBezierCurves[2][0] * N_200 + controlPointsBezierCurves[2][1] * N_210 + controlPointsBezierCurves[2][2] * N_220;
+   for (size_t row = 0; row != controlPointsBezierCurves.size() - 1; ++row)
+   {
+        size_t rowBasisFunc = 0;
+
+        for (size_t col = 0; col != basisFuncsAndTheirDerivs[0].size(); ++col)
+        {
+            for (size_t i = 0; i != 3; ++i)
+            {
+                freeMembers[indexFreeMembers] += controlPointsBezierCurves[row][i] * -basisFuncsAndTheirDerivs[rowBasisFunc][i]; // Текущая кривая
+                freeMembers[indexFreeMembers] += controlPointsBezierCurves[row + 1][i] * basisFuncsAndTheirDerivsRev[rowBasisFunc][i]; // След. кривая
+            }
+
+            ++rowBasisFunc;
+            ++indexFreeMembers;
+        }
+   }
+
+   //freeMembers[9] = controlPointsBezierCurves[0][0] * -N_001 + controlPointsBezierCurves[0][1] * -N_011 + controlPointsBezierCurves[0][2] * -N_021 + controlPointsBezierCurves[1][0] * N_000 + controlPointsBezierCurves[1][1] * N_010 + controlPointsBezierCurves[1][2] * N_020;
+   //freeMembers[10] = controlPointsBezierCurves[0][0] * -N_101 + controlPointsBezierCurves[0][1] * -N_111 + controlPointsBezierCurves[0][2] * -N_121 + controlPointsBezierCurves[1][0] * N_100 + controlPointsBezierCurves[1][1] * N_110 + controlPointsBezierCurves[1][2] * N_120;
+   //freeMembers[11] = controlPointsBezierCurves[0][0] * -N_201 + controlPointsBezierCurves[0][1] * -N_211 + controlPointsBezierCurves[0][2] * -N_221 + controlPointsBezierCurves[1][0] * N_200 + controlPointsBezierCurves[1][1] * N_210 + controlPointsBezierCurves[1][2] * N_220;
+
+   //freeMembers[12] = controlPointsBezierCurves[1][0] * -N_001 + controlPointsBezierCurves[1][1] * -N_011 + controlPointsBezierCurves[1][2] * -N_021 + controlPointsBezierCurves[2][0] * N_000 + controlPointsBezierCurves[2][1] * N_010 + controlPointsBezierCurves[2][2] * N_020;
+   //freeMembers[13] = controlPointsBezierCurves[1][0] * -N_101 + controlPointsBezierCurves[1][1] * -N_111 + controlPointsBezierCurves[1][2] * -N_121 + controlPointsBezierCurves[2][0] * N_100 + controlPointsBezierCurves[2][1] * N_110 + controlPointsBezierCurves[2][2] * N_120;
+   //freeMembers[14] = controlPointsBezierCurves[1][0] * -N_201 + controlPointsBezierCurves[1][1] * -N_211 + controlPointsBezierCurves[1][2] * -N_221 + controlPointsBezierCurves[2][0] * N_200 + controlPointsBezierCurves[2][1] * N_210 + controlPointsBezierCurves[2][2] * N_220;
 
    auto operation = IMatrixOperations::GetMatrixOperationsClass(OperationClass::eigen); // Создаём указатель на интерфейс операций СЛАУ
 
