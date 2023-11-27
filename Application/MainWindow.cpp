@@ -1318,6 +1318,7 @@ MainWindow::MainWindow(QWidget *parent)
 }
 */
 
+/* Тестовый пример слияния 3 кривых Безье 2 степени
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -1394,16 +1395,16 @@ MainWindow::MainWindow(QWidget *parent)
     std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3};
 
     MergeCurves merge;
-    std::vector<Curve> newBezierCurves = merge.attachAllBezierCurves(bezierCurves);
+    bezierCurves = merge.attachAllBezierCurves(bezierCurves);
 
-    for (const auto& bezierCurve: newBezierCurves)
+    for (const auto& bezierCurve: bezierCurves)
     {
         canvas.drawCurve(bezierCurve, "", QColor(20, 0, 230));
         //canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
     }
 
-    double checkableParamLeft_1 = bezierCurves[0].getCurvePoints()[60].parameter - 0.000001;
-    double checkableParamRight_1 = bezierCurves[1].getCurvePoints()[0].parameter + 0.000001;
+    double checkableParamLeft_1 = 1 - 0.000001;
+    double checkableParamRight_1 = 0 + 0.000001;
     CurvePoint leftPoint, rightPoint;
 
     CalcCurve::calcCurvePointAndDerivs(bezierCurves[0], leftPoint, checkableParamLeft_1);
@@ -1467,9 +1468,9 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 }
+*/
 
 
-/*
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -1550,16 +1551,16 @@ MainWindow::MainWindow(QWidget *parent)
     std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3};
 
     MergeCurves merge;
-    std::vector<Curve> newBezierCurves = merge.attachAllBezierCurves(bezierCurves);
+    bezierCurves = merge.attachAllBezierCurves(bezierCurves);
 
-    for (const auto& bezierCurve: newBezierCurves)
+    for (const auto& bezierCurve: bezierCurves)
     {
         canvas.drawCurve(bezierCurve, "", QColor(20, 0, 230));
-        //canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
+        canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
     }
 
-    double checkableParamLeft_1 = bezierCurves[0].getCurvePoints()[60].parameter - 0.000001;
-    double checkableParamRight_1 = bezierCurves[1].getCurvePoints()[0].parameter + 0.000001;
+    double checkableParamLeft_1 = 1 - 0.000001;
+    double checkableParamRight_1 = 0 + 0.000001;
     CurvePoint leftPoint, rightPoint;
 
     CalcCurve::calcCurvePointAndDerivs(bezierCurves[0], leftPoint, checkableParamLeft_1);
@@ -1591,8 +1592,8 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
-    double checkableParamLeft_2 = bezierCurves[1].getCurvePoints()[60].parameter - 0.000001;
-    double checkableParamRight_2 = bezierCurves[2].getCurvePoints()[0].parameter + 0.000001;
+    double checkableParamLeft_2 = 1 - 0.000001;
+    double checkableParamRight_2 = 0 + 0.000001;
 
     CalcCurve::calcCurvePointAndDerivs(bezierCurves[1], leftPoint, checkableParamLeft_2);
     CalcCurve::calcCurvePointAndDerivs(bezierCurves[2], rightPoint, checkableParamRight_2);
@@ -1623,6 +1624,5 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 }
-*/
 
 MainWindow::~MainWindow() { delete ui; }

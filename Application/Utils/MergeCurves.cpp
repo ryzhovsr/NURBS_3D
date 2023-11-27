@@ -408,50 +408,33 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
         }
    }
 
-   //freeMembers[9] = controlPointsBezierCurves[0][0] * -N_001 + controlPointsBezierCurves[0][1] * -N_011 + controlPointsBezierCurves[0][2] * -N_021 + controlPointsBezierCurves[1][0] * N_000 + controlPointsBezierCurves[1][1] * N_010 + controlPointsBezierCurves[1][2] * N_020;
-   //freeMembers[10] = controlPointsBezierCurves[0][0] * -N_101 + controlPointsBezierCurves[0][1] * -N_111 + controlPointsBezierCurves[0][2] * -N_121 + controlPointsBezierCurves[1][0] * N_100 + controlPointsBezierCurves[1][1] * N_110 + controlPointsBezierCurves[1][2] * N_120;
-   //freeMembers[11] = controlPointsBezierCurves[0][0] * -N_201 + controlPointsBezierCurves[0][1] * -N_211 + controlPointsBezierCurves[0][2] * -N_221 + controlPointsBezierCurves[1][0] * N_200 + controlPointsBezierCurves[1][1] * N_210 + controlPointsBezierCurves[1][2] * N_220;
-
-   //freeMembers[12] = controlPointsBezierCurves[1][0] * -N_001 + controlPointsBezierCurves[1][1] * -N_011 + controlPointsBezierCurves[1][2] * -N_021 + controlPointsBezierCurves[2][0] * N_000 + controlPointsBezierCurves[2][1] * N_010 + controlPointsBezierCurves[2][2] * N_020;
-   //freeMembers[13] = controlPointsBezierCurves[1][0] * -N_101 + controlPointsBezierCurves[1][1] * -N_111 + controlPointsBezierCurves[1][2] * -N_121 + controlPointsBezierCurves[2][0] * N_100 + controlPointsBezierCurves[2][1] * N_110 + controlPointsBezierCurves[2][2] * N_120;
-   //freeMembers[14] = controlPointsBezierCurves[1][0] * -N_201 + controlPointsBezierCurves[1][1] * -N_211 + controlPointsBezierCurves[1][2] * -N_221 + controlPointsBezierCurves[2][0] * N_200 + controlPointsBezierCurves[2][1] * N_210 + controlPointsBezierCurves[2][2] * N_220;
-
    auto operation = IMatrixOperations::GetMatrixOperationsClass(OperationClass::eigen); // Создаём указатель на интерфейс операций СЛАУ
 
    if (operation == nullptr)
    {
-        qDebug() << "Error! attachBSplines: oper == nullptr";;
+        qDebug() << "Error! attachAllBezierCurves: operation == nullptr";;
         return {};
    }
 
-   std::vector<Point3D> solution = operation->solveEquation(coefficients, freeMembers); // Решаем СЛАУ
-   int rankMatrixA = operation->getMatrixRank(coefficients);
-   double detMatrixA = operation->getMatrixDet(coefficients);
-
    qDebug() << "Coefficients matrix info:" <<
-           "\nRank = " << rankMatrixA <<
-            "\nDet = " << detMatrixA;
+           "\nRank = " << operation->getMatrixRank(coefficients) <<
+            "\nDet = " << operation->getMatrixDet(coefficients);
 
+   std::vector<Point3D> solution = operation->solveEquation(coefficients, freeMembers); // Решаем СЛАУ
    int tempCounter = 0;
+   std::vector<Curve> newBezierCurves;
 
-   // Регулируем котрольные точки Безье кривых для сопряжения
    for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i)
    {
-        for (size_t j = 0; j != controlPointsBezierCurves[i].size(); ++j)
+        for (size_t j = 0; j != controlPointsBezierCurves[i].size(); ++j) // Регулируем котрольные точки Безье кривых для сопряжения
         {
             controlPointsBezierCurves[i][j] += solution[tempCounter++];
         }
-   }
 
-   std::vector<Curve> newBezierCurves;
-   const std::vector<double> WEIGHTS(controlPointsBezierCurves[0].size(), 1);   // Весовые коэффициенты (у всех кривых Безье одинаковые)
-   const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
-   const int DEGREE = bezierCurves[0].getDegree(); // Степень кривой (у всех кривых Безье одинаковые)
-
-   for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i) // Создаём новые кривые Безье и добавляем в вектор, чтобы функция возвратила его
-   {
-        Curve tempCurve(controlPointsBezierCurves[i], WEIGHTS, DEGREE, CURVE_NUM_POINTS);
-        newBezierCurves.push_back(tempCurve);
+        // Создаём новую кривую Безье и добавляем в вектор, чтобы функция возвратила его
+        const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
+        Curve bezierCurve(controlPointsBezierCurves[i], std::vector<double> (controlPointsBezierCurves[0].size(), 1), bezierCurves[0].getDegree(), CURVE_NUM_POINTS);
+        newBezierCurves.push_back(bezierCurve);
    }
 
    return newBezierCurves;
