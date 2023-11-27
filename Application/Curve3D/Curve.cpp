@@ -86,6 +86,7 @@ void Curve::calcCurve()
 void Curve::addMultipleKnot()
 {
     std::vector<double> newNodes = {0.3333333333333333, 0.6666666666666666};
+    // std::vector<double> newNodes = {0.3333333333333333, 0.3333333333333333, 0.6666666666666666,  0.6666666666666666};
     std::vector<Point3D> newControlPoints(_controlPoints.size() + newNodes.size());
     std::vector<double> newNodalVector(_nodalVector.size() + newNodes.size());
 

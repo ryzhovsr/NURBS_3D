@@ -171,12 +171,15 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
     int span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
     std::vector<std::vector<double>> basisFuncsAndTheirDerivs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
 
-    const double SIZE_MATRIX = 15; // Почему 15 - разобраться
-    std::vector<std::vector<double>> coefficients(SIZE_MATRIX, std::vector<double>(SIZE_MATRIX)); // Матрица коэффициентов
-    const size_t COUNT_EPSILONS = bezierCurves.size() * bezierCurves[0].getControlPoints().size(); // Количество эпсилон для СЛАУ
+    const size_t NUMBER_BASIS_FUNCS = basisFuncsAndTheirDerivs[0].size();                               // Количество базисных функций
+    const size_t NUMBER_BEZIER_CURVES = bezierCurves.size();                                            // Количество Безье кривых
+    const size_t NUMBER_EPSILONS = bezierCurves.size() * bezierCurves[0].getControlPoints().size();     // Количество эпсилон для СЛАУ
+    const double MATRIX_SIZE = NUMBER_BASIS_FUNCS * (NUMBER_BEZIER_CURVES + NUMBER_BEZIER_CURVES - 1);  // Размер матрицы коэффициентов
+
+    std::vector<std::vector<double>> coefficients(MATRIX_SIZE, std::vector<double>(MATRIX_SIZE));       // Матрица коэффициентов
 
     // Заполняем матрицу коэффициентами
-    for (size_t i = 0; i != COUNT_EPSILONS; ++i) // Заполняем двойками по главной диагонали
+    for (size_t i = 0; i != NUMBER_EPSILONS; ++i) // Заполняем двойками по главной диагонали
     {
         coefficients[i][i] = 2;
     }
@@ -189,7 +192,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
         size_t rowBasisFunc = 0;
         double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
 
-        for (size_t col = COUNT_EPSILONS; col != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++col) // Итерируемся по общему числу производных базисных функций
+        for (size_t col = NUMBER_EPSILONS; col != NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++col) // Итерируемся по общему числу производных базисных функций
         {
             double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
             coefficients[row][col] = basisFuncVal;
@@ -228,7 +231,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
         size_t rowBasisFunc = 0;
         double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
 
-        for (size_t col = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size() * 2; ++col) // Итерируемся по общему числу производных базисных функций
+        for (size_t col = NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size() * 2; ++col) // Итерируемся по общему числу производных базисных функций
         {
             double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
             coefficients[row][col] = basisFuncVal;
@@ -261,7 +264,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
     size_t rowBasisFunc = 0;
 
-    for (size_t row = COUNT_EPSILONS; row != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++row) // Итерируемся по общему числу базисных функций
+    for (size_t row = NUMBER_EPSILONS; row != NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++row) // Итерируемся по общему числу базисных функций
     {
         size_t reverseCol = basisFuncsAndTheirDerivs[0].size() * 2 - 1;
         size_t colBasisFunc = 0;
@@ -272,9 +275,9 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
             double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
             coefficients[row][col] = basisFuncVal;
 
-            if (basisFuncVal != 0)
+            if (basisFuncVal != 0) ///////////////////////////////////// COL != 0 УБРАТЬ ВОЗМОЖНО ОШИБКА
             {
-                if (prevBasisFuncVal < 0 && basisFuncVal < 0) // Если предыдущий был отрицательным и следующий тоже отрицательный
+                if (prevBasisFuncVal < 0 && basisFuncVal < 0 && col != 0) // Если предыдущий был отрицательным и следующий тоже отрицательный
                 {
                     basisFuncVal *= -1;
                 }
@@ -300,7 +303,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
     rowBasisFunc = 0;
 
-    for (size_t row = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); row != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size() * 2; ++row) // Итерируемся по общему числу базисных функций
+    for (size_t row = NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); row != NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size() * 2; ++row) // Итерируемся по общему числу базисных функций
     {
         size_t reverseCol = basisFuncsAndTheirDerivs[0].size() * 3 - 1;
         size_t colBasisFunc = 0;
@@ -311,9 +314,9 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
             double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
             coefficients[row][col] = basisFuncVal;
 
-            if (basisFuncVal != 0)
+            if (basisFuncVal != 0) ///////////////////////////////////// COL != 4 УБРАТЬ ВОЗМОЖНО ОШИБКА
             {
-                if (prevBasisFuncVal < 0 && basisFuncVal < 0) // Если предыдущий был отрицательным и следующий тоже отрицательный
+                if (prevBasisFuncVal < 0 && basisFuncVal < 0 && col != basisFuncsAndTheirDerivs[0].size()) // Если предыдущий был отрицательным и следующий тоже отрицательный и колонка не равна началу
                 {
                     basisFuncVal *= -1;
                 }
@@ -337,14 +340,14 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
         ++rowBasisFunc;
     }
 
-    bool fixStartPoint = true;  // Фиксация первой граничной точки
-    bool fixEndPoint = true;    // Фиксация последней граничной точки
+    bool fixStartPoint = false;  // Фиксация первой граничной точки
+    bool fixEndPoint = false;    // Фиксация последней граничной точки
     bool fixFirstDivStartPoint = false; // Фиксация первой производной первой граничной точки
     bool fixFirstDivEndPoint = false;   // Фиксация первой производной последней граничной точки
 
     if (fixStartPoint) // Фиксация первой граничной точки
     {
-        for (size_t i = COUNT_EPSILONS; i != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++i)
+        for (size_t i = NUMBER_EPSILONS; i != NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++i)
         {
             coefficients[0][i] = 0;
         }
@@ -352,7 +355,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
     if (fixFirstDivStartPoint) // Фиксация первой производной первой граничной точки
     {
-        for (size_t i = COUNT_EPSILONS; i != COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++i)
+        for (size_t i = NUMBER_EPSILONS; i != NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); ++i)
         {
             coefficients[1][i] = 0;
         }
@@ -360,30 +363,29 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
     if (fixFirstDivEndPoint) // Фиксация первой производной последней граничной точки
     {
-        for (size_t col = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != coefficients[0].size(); ++col)
+        for (size_t col = NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != coefficients[0].size(); ++col)
         {
-            coefficients[COUNT_EPSILONS - 2][col] = 0;
+            coefficients[NUMBER_EPSILONS - 2][col] = 0;
         }
     }
 
     if (fixEndPoint) // Фиксация последней граничной точки
     {
-        for (size_t col = COUNT_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != coefficients[0].size(); ++col)
+        for (size_t col = NUMBER_EPSILONS + basisFuncsAndTheirDerivs[0].size(); col != coefficients[0].size(); ++col)
         {
-            coefficients[COUNT_EPSILONS - 1][col] = 0;
+            coefficients[NUMBER_EPSILONS - 1][col] = 0;
         }
     }
 
-   const size_t COUNT_BEZIER_CURVES = bezierCurves.size(); // Количество Безье кривых
-   std::vector<std::vector<Point3D>> controlPointsBezierCurves (COUNT_BEZIER_CURVES, std::vector<Point3D>());
+   std::vector<std::vector<Point3D>> controlPointsBezierCurves (NUMBER_BEZIER_CURVES, std::vector<Point3D>());
 
-   for (size_t i = 0; i != COUNT_BEZIER_CURVES; ++i)
+   for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i)
    {
         controlPointsBezierCurves[i] = bezierCurves[i].getControlPoints();
    }
 
-   std::vector<Point3D> freeMembers(SIZE_MATRIX);
-   size_t indexFreeMembers = COUNT_EPSILONS;
+   std::vector<Point3D> freeMembers(MATRIX_SIZE);
+   size_t indexFreeMembers = NUMBER_EPSILONS;
 
    parameter = 0;
    span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
@@ -395,7 +397,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
         for (size_t col = 0; col != basisFuncsAndTheirDerivs[0].size(); ++col)
         {
-            for (size_t i = 0; i != 3; ++i)
+            for (size_t i = 0; i != controlPointsBezierCurves[0].size(); ++i)
             {
                 freeMembers[indexFreeMembers] += controlPointsBezierCurves[row][i] * -basisFuncsAndTheirDerivs[rowBasisFunc][i]; // Текущая кривая
                 freeMembers[indexFreeMembers] += controlPointsBezierCurves[row + 1][i] * basisFuncsAndTheirDerivsRev[rowBasisFunc][i]; // След. кривая
@@ -423,13 +425,17 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
    }
 
    std::vector<Point3D> solution = operation->solveEquation(coefficients, freeMembers); // Решаем СЛАУ
-   // int rankMatrixA = operation->getMatrixRank(coefficients);
-   // double detMatrixA = operation->getMatrixDet(coefficients);
+   int rankMatrixA = operation->getMatrixRank(coefficients);
+   double detMatrixA = operation->getMatrixDet(coefficients);
+
+   qDebug() << "Coefficients matrix info:" <<
+           "\nRank = " << rankMatrixA <<
+            "\nDet = " << detMatrixA;
 
    int tempCounter = 0;
 
    // Регулируем котрольные точки Безье кривых для сопряжения
-   for (size_t i = 0; i != COUNT_BEZIER_CURVES; ++i)
+   for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i)
    {
         for (size_t j = 0; j != controlPointsBezierCurves[i].size(); ++j)
         {
@@ -442,7 +448,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
    const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
    const int DEGREE = bezierCurves[0].getDegree(); // Степень кривой (у всех кривых Безье одинаковые)
 
-   for (size_t i = 0; i != COUNT_BEZIER_CURVES; ++i) // Создаём новые кривые Безье и добавляем в вектор, чтобы функция возвратила его
+   for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i) // Создаём новые кривые Безье и добавляем в вектор, чтобы функция возвратила его
    {
         Curve tempCurve(controlPointsBezierCurves[i], WEIGHTS, DEGREE, CURVE_NUM_POINTS);
         newBezierCurves.push_back(tempCurve);

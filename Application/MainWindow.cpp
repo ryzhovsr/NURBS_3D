@@ -1337,14 +1337,14 @@ MainWindow::MainWindow(QWidget *parent)
     const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
     const int DEGREE = 2;   // Степень кривой
 
-    Curve bSpline(CONTROL_POINTS, WEIGHTS, DEGREE, CURVE_NUM_POINTS);
+    Curve originalCurve(CONTROL_POINTS, WEIGHTS, DEGREE, CURVE_NUM_POINTS);
 
     Graph2D canvas(ui->canvas);
     //canvas.drawCurve(bSpline, "Оригинальная кривая", QColor(0, 1, 230));
     //canvas.drawDefiningPolygon(bSpline.getControlPoints(), "Определяющий многоуг. ориг. кривой");
 
     // 1 Начало Вставляем кратные узлы в узл. вектор
-    bSpline.addMultipleKnot();
+    originalCurve.addMultipleKnot();
     //canvas.drawCurve(bSpline, "Кривая с кратными узлами", QColor(220, 150, 30));
     //canvas.drawDefiningPolygon(bSpline.getControlPoints(), "Определяющий многоуг. новой. кривой");
     // 1. Конец
@@ -1352,9 +1352,9 @@ MainWindow::MainWindow(QWidget *parent)
     // 2. Начало. Делим на 3 кривые Безье и смещаем точки
     std::vector<Point3D> controlPointsBezier_1
     {
-        {1, 1.2, 0},
-        {1.5, 1.39, 0},
-        {2.25, 1.4449999999999998, 0}
+       {1, 1.2, 0},
+       {1.5, 1.39, 0},
+       {2.25, 1.4449999999999998, 0}
     };
 
     std::vector<Point3D> controlPointsBezier_2
@@ -1382,9 +1382,9 @@ MainWindow::MainWindow(QWidget *parent)
     Curve bezier_2(controlPointsBezier_2, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
     Curve bezier_3(controlPointsBezier_3, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
 
-    canvas.drawCurve(bezier_1, "Безье 1", QColor(20, 150, 30));
+    canvas.drawCurve(bezier_1, "Безье 1", QColor(20, 255, 30));
     canvas.drawCurve(bezier_2, "Безье 2", QColor(20, 200, 30));
-    canvas.drawCurve(bezier_3, "Безье 3", QColor(20, 250, 30));
+    canvas.drawCurve(bezier_3, "Безье 3", QColor(20, 100, 30));
     //canvas.drawDefiningPolygon(bezier_1.getControlPoints(), "", QColor(20, 150, 30), Qt::DashLine);
     //canvas.drawDefiningPolygon(bezier_2.getControlPoints(), "", QColor(20, 200, 30), Qt::DashLine);
     //canvas.drawDefiningPolygon(bezier_3.getControlPoints(), "", QColor(20, 250, 30), Qt::DashLine);
@@ -1394,14 +1394,235 @@ MainWindow::MainWindow(QWidget *parent)
     std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3};
 
     MergeCurves merge;
-    std::vector<Curve> newBsplines = merge.attachAllBezierCurves(bezierCurves);
+    std::vector<Curve> newBezierCurves = merge.attachAllBezierCurves(bezierCurves);
 
-    for (size_t i = 0; i != newBsplines.size(); ++i)
+    for (const auto& bezierCurve: newBezierCurves)
     {
-        canvas.drawCurve(newBsplines[i], "", QColor(20, 0, 230));
-        //canvas.drawDefiningPolygon(newBsplines[i].getControlPoints(), "", QColor(20, 150, 30));
+        canvas.drawCurve(bezierCurve, "", QColor(20, 0, 230));
+        //canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
+    }
+
+    double checkableParamLeft_1 = bezierCurves[0].getCurvePoints()[60].parameter - 0.000001;
+    double checkableParamRight_1 = bezierCurves[1].getCurvePoints()[0].parameter + 0.000001;
+    CurvePoint leftPoint, rightPoint;
+
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[0], leftPoint, checkableParamLeft_1);
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[1], rightPoint, checkableParamRight_1);
+
+    for (int j = 0; j < bezierCurves[0].getCurvePoints()[0].derivs.size(); ++j)
+    {
+        double leftLength = sqrt(leftPoint.derivs[j].x * leftPoint.derivs[j].x + leftPoint.derivs[j].y * leftPoint.derivs[j].y + leftPoint.derivs[j].z * leftPoint.derivs[j].z);
+        double rightLength = sqrt(rightPoint.derivs[j].x * rightPoint.derivs[j].x + rightPoint.derivs[j].y * rightPoint.derivs[j].y + rightPoint.derivs[j].z * rightPoint.derivs[j].z);
+        double diff = abs(leftLength - rightLength);
+
+        if (diff > 0.01)
+        {
+            QString str = "";
+            if (j == 0)
+                str = "кривой";
+            else if (j == 1)
+                str = "1-й производной";
+            else if (j == 2)
+                str = "2-й производной";
+            else if (j == 3)
+                str = "3-й производной";
+            else if (j == 4)
+                str = "4-й производной";
+            else if (j == 5)
+                str = "5-й производной";
+
+            qDebug() << "Разрыв " << str << " в точке " << checkableParamLeft_1 << " и diff = " << diff;
+        }
+    }
+
+    double checkableParamLeft_2 = bezierCurves[1].getCurvePoints()[60].parameter - 0.000001;
+    double checkableParamRight_2 = bezierCurves[2].getCurvePoints()[0].parameter + 0.000001;
+
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[1], leftPoint, checkableParamLeft_2);
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[2], rightPoint, checkableParamRight_2);
+
+    for (int j = 0; j < bezierCurves[0].getCurvePoints()[0].derivs.size(); ++j)
+    {
+        double leftLength = sqrt(leftPoint.derivs[j].x * leftPoint.derivs[j].x + leftPoint.derivs[j].y * leftPoint.derivs[j].y + leftPoint.derivs[j].z * leftPoint.derivs[j].z);
+        double rightLength = sqrt(rightPoint.derivs[j].x * rightPoint.derivs[j].x + rightPoint.derivs[j].y * rightPoint.derivs[j].y + rightPoint.derivs[j].z * rightPoint.derivs[j].z);
+        double diff = abs(leftLength - rightLength);
+
+        if (diff > 0.01)
+        {
+            QString str = "";
+            if (j == 0)
+                str = "кривой";
+            else if (j == 1)
+                str = "1-й производной";
+            else if (j == 2)
+                str = "2-й производной";
+            else if (j == 3)
+                str = "3-й производной";
+            else if (j == 4)
+                str = "4-й производной";
+            else if (j == 5)
+                str = "5-й производной";
+
+            qDebug() << "Разрыв " << str << " в точке " << checkableParamLeft_2 << " и diff = " << diff;
+        }
     }
 }
 
+
+/*
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    connect(ui->canvas, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(doubleClickCanvas(QMouseEvent*)));
+
+    const std::vector<Point3D> CONTROL_POINTS
+    {
+        {1, 1.2, 0},
+        {1.5, 1.39, 0},
+        {2, 1.3, 0},
+        {3, 1.5, 0},
+        {4.5, 1.39, 0},
+        {5, 1.2, 0}
+    };
+
+    const std::vector<double> WEIGHTS(CONTROL_POINTS.size(), 1);   // Весовые коэффициенты контрольных точек
+    const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
+    const int DEGREE = 3;   // Степень кривой
+
+    Curve originalCurve(CONTROL_POINTS, WEIGHTS, DEGREE, CURVE_NUM_POINTS);
+
+    Graph2D canvas(ui->canvas);
+    //canvas.drawCurve(bSpline, "Оригинальная кривая", QColor(0, 1, 230));
+    //canvas.drawDefiningPolygon(bSpline.getControlPoints(), "Определяющий многоуг. ориг. кривой");
+
+    // 1 Начало Вставляем кратные узлы в узл. вектор
+    originalCurve.addMultipleKnot();
+    //canvas.drawCurve(bSpline, "Кривая с кратными узлами", QColor(220, 150, 30));
+    //canvas.drawDefiningPolygon(bSpline.getControlPoints(), "Определяющий многоуг. новой. кривой");
+    // 1. Конец
+
+    // 2. Начало. Делим на 3 кривые Безье и смещаем точки
+    std::vector<Point3D> controlPointsBezier_1
+    {
+        {1, 1.2, 0},
+        {1.5, 1.39, 0},
+        {1.75, 1.345, 0},
+        {2.041666666666667, 1.3558333333333334, 0}
+    };
+
+    std::vector<Point3D> controlPointsBezier_2
+    {
+        {2.041666666666667, 1.3558333333333334, 0},
+        {2.3333333333333335, 1.3666666666666667, 0},
+        {2.666666666666667, 1.4333333333333333, 0},
+        {3.2083333333333335, 1.4391666666666665, 0}
+    };
+
+    std::vector<Point3D> controlPointsBezier_3
+    {
+        {3.2083333333333335, 1.4391666666666665, 0},
+        {3.75, 1.4449999999999998, 0},
+        {4.5, 1.39, 0},
+        {5, 1.2, 0},
+    };
+
+    // Нарущаем непрерывность в точках соединения Безье Кривых
+    controlPointsBezier_1[1].y += -2 * 0.09;
+    controlPointsBezier_2[1].y += - 0.0 * 0.0;
+    controlPointsBezier_3[1].y += 1 * 0.09;
+
+    const std::vector<double> weightsBezierCurves(controlPointsBezier_1.size(), 1);   // Весовые коэффициенты контрольных точек
+
+    Curve bezier_1(controlPointsBezier_1, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
+    Curve bezier_2(controlPointsBezier_2, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
+    Curve bezier_3(controlPointsBezier_3, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
+
+    canvas.drawCurve(bezier_1, "Безье 1", QColor(20, 255, 30));
+    canvas.drawCurve(bezier_2, "Безье 2", QColor(20, 200, 30));
+    canvas.drawCurve(bezier_3, "Безье 3", QColor(20, 100, 30));
+    //canvas.drawDefiningPolygon(bezier_1.getControlPoints(), "", QColor(20, 150, 30), Qt::DashLine);
+    //canvas.drawDefiningPolygon(bezier_2.getControlPoints(), "", QColor(20, 200, 30), Qt::DashLine);
+    //canvas.drawDefiningPolygon(bezier_3.getControlPoints(), "", QColor(20, 250, 30), Qt::DashLine);
+    // 2. Конец
+
+    // 3. Соединяем B-сплайны
+    std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3};
+
+    MergeCurves merge;
+    std::vector<Curve> newBezierCurves = merge.attachAllBezierCurves(bezierCurves);
+
+    for (const auto& bezierCurve: newBezierCurves)
+    {
+        canvas.drawCurve(bezierCurve, "", QColor(20, 0, 230));
+        //canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
+    }
+
+    double checkableParamLeft_1 = bezierCurves[0].getCurvePoints()[60].parameter - 0.000001;
+    double checkableParamRight_1 = bezierCurves[1].getCurvePoints()[0].parameter + 0.000001;
+    CurvePoint leftPoint, rightPoint;
+
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[0], leftPoint, checkableParamLeft_1);
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[1], rightPoint, checkableParamRight_1);
+
+    for (int j = 0; j < bezierCurves[0].getCurvePoints()[0].derivs.size(); ++j)
+    {
+        double leftLength = sqrt(leftPoint.derivs[j].x * leftPoint.derivs[j].x + leftPoint.derivs[j].y * leftPoint.derivs[j].y + leftPoint.derivs[j].z * leftPoint.derivs[j].z);
+        double rightLength = sqrt(rightPoint.derivs[j].x * rightPoint.derivs[j].x + rightPoint.derivs[j].y * rightPoint.derivs[j].y + rightPoint.derivs[j].z * rightPoint.derivs[j].z);
+        double diff = abs(leftLength - rightLength);
+
+        if (diff > 0.01)
+        {
+            QString str = "";
+            if (j == 0)
+                str = "кривой";
+            else if (j == 1)
+                str = "1-й производной";
+            else if (j == 2)
+                str = "2-й производной";
+            else if (j == 3)
+                str = "3-й производной";
+            else if (j == 4)
+                str = "4-й производной";
+            else if (j == 5)
+                str = "5-й производной";
+
+            qDebug() << "Разрыв " << str << " в точке " << &leftPoint.derivs[j] << " и diff = " << diff;
+        }
+    }
+
+    double checkableParamLeft_2 = bezierCurves[1].getCurvePoints()[60].parameter - 0.000001;
+    double checkableParamRight_2 = bezierCurves[2].getCurvePoints()[0].parameter + 0.000001;
+
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[1], leftPoint, checkableParamLeft_2);
+    CalcCurve::calcCurvePointAndDerivs(bezierCurves[2], rightPoint, checkableParamRight_2);
+
+    for (int j = 0; j < bezierCurves[0].getCurvePoints()[0].derivs.size(); ++j)
+    {
+        double leftLength = sqrt(leftPoint.derivs[j].x * leftPoint.derivs[j].x + leftPoint.derivs[j].y * leftPoint.derivs[j].y + leftPoint.derivs[j].z * leftPoint.derivs[j].z);
+        double rightLength = sqrt(rightPoint.derivs[j].x * rightPoint.derivs[j].x + rightPoint.derivs[j].y * rightPoint.derivs[j].y + rightPoint.derivs[j].z * rightPoint.derivs[j].z);
+        double diff = abs(leftLength - rightLength);
+
+        if (diff > 0.01)
+        {
+            QString str = "";
+            if (j == 0)
+                str = "кривой";
+            else if (j == 1)
+                str = "1-й производной";
+            else if (j == 2)
+                str = "2-й производной";
+            else if (j == 3)
+                str = "3-й производной";
+            else if (j == 4)
+                str = "4-й производной";
+            else if (j == 5)
+                str = "5-й производной";
+
+            qDebug() << "Разрыв " << str << " в точке " << &leftPoint.derivs[j] << " и diff = " << diff;
+        }
+    }
+}
+*/
 
 MainWindow::~MainWindow() { delete ui; }
