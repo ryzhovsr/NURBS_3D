@@ -1489,7 +1489,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     const std::vector<double> WEIGHTS(CONTROL_POINTS.size(), 1);   // Весовые коэффициенты контрольных точек
     const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
-    const int DEGREE = 3;   // Степень кривой
+    const int DEGREE = 2;   // Степень кривой
 
     Curve originalCurve(CONTROL_POINTS, WEIGHTS, DEGREE, CURVE_NUM_POINTS);
 
@@ -1509,46 +1509,55 @@ MainWindow::MainWindow(QWidget *parent)
         {1, 1.2, 0},
         {1.5, 1.39, 0},
         {1.75, 1.345, 0},
-        {2.041666666666667, 1.3558333333333334, 0}
     };
 
     std::vector<Point3D> controlPointsBezier_2
     {
-        {2.041666666666667, 1.3558333333333334, 0},
-        {2.3333333333333335, 1.3666666666666667, 0},
-        {2.666666666666667, 1.4333333333333333, 0},
-        {3.2083333333333335, 1.4391666666666665, 0}
+        {1.75, 1.345, 0},
+        {2, 1.3, 0},
+        {2.5, 1.4, 0},
     };
 
     std::vector<Point3D> controlPointsBezier_3
     {
-        {3.2083333333333335, 1.4391666666666665, 0},
+        {2.5, 1.4, 0},
+        {3, 1.5, 0},
+        {3.75, 1.4449999999999998, 0}
+    };
+
+    std::vector<Point3D> controlPointsBezier_4
+    {
         {3.75, 1.4449999999999998, 0},
         {4.5, 1.39, 0},
-        {5, 1.2, 0},
+        {5, 1.2, 0}
     };
 
     // Нарущаем непрерывность в точках соединения Безье Кривых
     controlPointsBezier_1[1].y += -2 * 0.09;
-    controlPointsBezier_2[1].y += - 0.0 * 0.0;
-    controlPointsBezier_3[1].y += 1 * 0.09;
+    controlPointsBezier_2[1].y += -1 * 0.09;
+    controlPointsBezier_3[1].y += -1 * 0.09;
+    controlPointsBezier_4[1].y += 1 * 0.19;
 
     const std::vector<double> weightsBezierCurves(controlPointsBezier_1.size(), 1);   // Весовые коэффициенты контрольных точек
 
     Curve bezier_1(controlPointsBezier_1, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
     Curve bezier_2(controlPointsBezier_2, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
     Curve bezier_3(controlPointsBezier_3, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
+    Curve bezier_4(controlPointsBezier_4, weightsBezierCurves, DEGREE, CURVE_NUM_POINTS);
 
     canvas.drawCurve(bezier_1, "Безье 1", QColor(20, 255, 30));
     canvas.drawCurve(bezier_2, "Безье 2", QColor(20, 200, 30));
     canvas.drawCurve(bezier_3, "Безье 3", QColor(20, 100, 30));
+    canvas.drawCurve(bezier_4, "Безье 4", QColor(20, 50, 30));
     //canvas.drawDefiningPolygon(bezier_1.getControlPoints(), "", QColor(20, 150, 30), Qt::DashLine);
     //canvas.drawDefiningPolygon(bezier_2.getControlPoints(), "", QColor(20, 200, 30), Qt::DashLine);
     //canvas.drawDefiningPolygon(bezier_3.getControlPoints(), "", QColor(20, 250, 30), Qt::DashLine);
+    //canvas.drawDefiningPolygon(bezier_4.getControlPoints(), "", QColor(20, 250, 30), Qt::DashLine);
     // 2. Конец
 
+
     // 3. Соединяем B-сплайны
-    std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3};
+    std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3, bezier_4};
 
     MergeCurves merge;
     bezierCurves = merge.attachAllBezierCurves(bezierCurves);
@@ -1558,6 +1567,7 @@ MainWindow::MainWindow(QWidget *parent)
         canvas.drawCurve(bezierCurve, "", QColor(20, 0, 230));
         canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
     }
+
 
     double checkableParamLeft_1 = 1 - 0.000001;
     double checkableParamRight_1 = 0 + 0.000001;
