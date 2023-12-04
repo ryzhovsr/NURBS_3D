@@ -349,7 +349,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
    qDebug() << "Coefficients matrix info:" <<
            "\nRank = " << operation->getMatrixRank(coefficients) <<
-            "\nDet = " << operation->getMatrixDet(coefficients);
+           "\nDet = " << operation->getMatrixDet(coefficients) << '\n';
 
    std::vector<Point3D> solution = operation->solveEquation(coefficients, freeMembers); // Решаем СЛАУ
    int tempCounter = 0;
@@ -363,7 +363,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
         }
 
         // Создаём новую кривую Безье и добавляем в вектор, чтобы функция возвратила его
-        const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
+        const int CURVE_NUM_POINTS = 1001;   // Кол-во точек, из которых будет состоять кривая
         Curve bezierCurve(controlPointsBezierCurves[i], std::vector<double> (controlPointsBezierCurves[0].size(), 1), bezierCurves[0].getDegree(), CURVE_NUM_POINTS);
         newBezierCurves.push_back(bezierCurve);
    }

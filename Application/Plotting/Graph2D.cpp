@@ -13,11 +13,11 @@ Graph2D::Graph2D(QCustomPlot *canvas, const QString &title) noexcept
         _canvas->plotLayout()->addElement (0, 0, new QCPTextElement(_canvas, _title, QFont("sans", 12)));   // Добавляем оглавление
     }
 
-    //_canvas->xAxis->setRange(-0.15, 0.15);
-    //_canvas->yAxis->setRange(-0.15, 0.15);
+    _canvas->xAxis->setRange(-0.15, 0.15);
+    _canvas->yAxis->setRange(-0.15, 0.15);
 
-    _canvas->xAxis->setRange(0, 6);
-    _canvas->yAxis->setRange(0.75, 1.6);
+    //_canvas->xAxis->setRange(0, 6);
+    //_canvas->yAxis->setRange(0.75, 1.6);
 }
 
 void Graph2D::drawDefiningPolygon(const std::vector<Point3D> &controlPoints, const QString &name, const QColor &color, const Qt::PenStyle &penStyle, double width) const noexcept
@@ -57,6 +57,8 @@ void Graph2D::drawCurve(const std::vector<CurvePoint> &curvePoints, const QStrin
     for (const auto &curvePoint: curvePoints)
         shape->addData(curvePoint.x, curvePoint.y);
 
+
+    _canvas->legend->removeAt(0); // Удаляет из легенды
     _canvas->replot();
 }
 
