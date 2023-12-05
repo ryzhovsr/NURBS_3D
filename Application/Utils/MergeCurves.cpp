@@ -166,7 +166,7 @@ Curve MergeCurves::attachTwoBezierCurves(const Curve &curve1, const Curve &curve
 
 std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezierCurves)
 {
-    // Находим базисные функции у первой кривой в конечной точке (базисные функции у всех кривых одинаковые)
+    // Рассчитываем базисные функции у кривой в конечной параметрической точке (базисные функции у всех кривых одинаковые)
     double parameter = 1;
     int span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
     std::vector<std::vector<double>> basisFuncsAndTheirDerivs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
@@ -185,7 +185,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
         coefficients[i][i] = 2;
     }
 
-    // Треугольники сверху - вниз
+    // Заполняем треугольники базисных функций в матрице коэффициентов сверху вниз
     for (size_t breakPointCounter = 0; breakPointCounter != NUMBER_BREAK_POINTS; ++breakPointCounter) // Каждый breakPoint - один треугольник базисных функций в coefficients
     {
         size_t reverseRow = NUMBER_BASIS_FUNCS * 2 - 1 + NUMBER_BASIS_FUNCS * breakPointCounter; // Строка начала нижней части треугольника
@@ -273,14 +273,34 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
 
     bool fixStartPoint = true;  // Фиксация первой граничной точки
     bool fixEndPoint = true;    // Фиксация последней граничной точки
-    bool fixFirstDivStartPoint = false; // Фиксация первой производной первой граничной точки
-    bool fixFirstDivEndPoint = false;   // Фиксация первой производной последней граничной точки
+    bool fixFirstDivStartPoint = false;     // Фиксация первой производной первой граничной точки
+    bool fixFirstDivEndPoint = false;       // Фиксация первой производной последней граничной точки
 
     if (fixStartPoint) // Фиксация первой граничной точки
     {
         for (size_t i = NUMBER_EPSILONS; i != NUMBER_EPSILONS + NUMBER_BASIS_FUNCS; ++i)
         {
             coefficients[0][i] = 0;
+
+            coefficients[1][i] = 0;
+            coefficients[2][i] = 0;
+            coefficients[3][i] = 0;
+            coefficients[4][i] = 0;
+            //coefficients[5][i] = 0;
+        }
+    }
+
+    if (fixEndPoint) // Фиксация последней граничной точки
+    {
+        for (size_t col = NUMBER_EPSILONS + NUMBER_BASIS_FUNCS; col != MATRIX_SIZE; ++col)
+        {
+            coefficients[NUMBER_EPSILONS - 1][col] = 0;
+
+            coefficients[NUMBER_EPSILONS - 2][col] = 0;
+            coefficients[NUMBER_EPSILONS - 3][col] = 0;
+            coefficients[NUMBER_EPSILONS - 4][col] = 0;
+            coefficients[NUMBER_EPSILONS - 5][col] = 0;
+            //coefficients[NUMBER_EPSILONS - 6][col] = 0;
         }
     }
 
@@ -300,13 +320,6 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezier
         }
     }
 
-    if (fixEndPoint) // Фиксация последней граничной точки
-    {
-        for (size_t col = NUMBER_EPSILONS + NUMBER_BASIS_FUNCS; col != MATRIX_SIZE; ++col)
-        {
-            coefficients[NUMBER_EPSILONS - 1][col] = 0;
-        }
-    }
 
    std::vector<std::vector<Point3D>> controlPointsBezierCurves (NUMBER_BEZIER_CURVES, std::vector<Point3D>());
 
