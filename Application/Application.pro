@@ -27,7 +27,8 @@ SOURCES += \
     Utils/FindDistanceBetweenCurves.cpp \
     Utils/IMatrixOperations.cpp \
     Utils/MathUtils.cpp \
-    Utils/MergeCurves.cpp
+    Utils/MergeCurves.cpp \
+    Utils/UsefulUtils.cpp
 
 HEADERS += \
     ApproximationAlgorithms/AlgBasedCurveConjugation.h \
@@ -48,7 +49,8 @@ HEADERS += \
     Utils/FindDistanceBetweenCurves.h \
     Utils/IMatrixOperations.h \
     Utils/MathUtils.h \
-    Utils/MergeCurves.h
+    Utils/MergeCurves.h \
+    Utils/UsefulUtils.h
 
 FORMS += \
     MainWindow.ui

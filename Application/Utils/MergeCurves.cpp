@@ -2,6 +2,7 @@
 #include "Utils/MathUtils.h"
 #include "Utils/IMatrixOperations.h"
 #include "Curve3D/CalcCurve.h"
+#include "usefulutils.h"
 
 // Рекурсивные методы рассчёта производных, предназначенных для дальнейшего соединения кривых Безье
 Point3D calcDerivLeftBezierCurveForMerger(const std::vector<Point3D>& points, int currentIndex, int startIndex)
@@ -164,222 +165,301 @@ Curve MergeCurves::attachTwoBezierCurves(const Curve &curve1, const Curve &curve
     return Curve(answer, weights, curve1.getDegree(), static_cast<int>(curve1.getCurvePoints().size()));
 }
 
-std::vector<Curve> MergeCurves::attachAllBezierCurves(std::vector<Curve>& bezierCurves)
+// Пространсто со вспомогательным функциями сопряжения кривой для attachAllBezierCurves
+namespace Impl
 {
-    // Рассчитываем базисные функции у кривой в конечной параметрической точке (базисные функции у всех кривых одинаковые)
-    double parameter = 1;
-    int span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
-    std::vector<std::vector<double>> basisFuncsAndTheirDerivs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
-
-    const size_t NUMBER_BASIS_FUNCS = basisFuncsAndTheirDerivs[0].size();                               // Количество базисных функций
-    const size_t NUMBER_BEZIER_CURVES = bezierCurves.size();                                            // Количество Безье кривых
-    const size_t NUMBER_BREAK_POINTS = NUMBER_BEZIER_CURVES - 1;                                        // Количество точек разрыва (на 1 меньше кол-ва кривых)
-    const size_t NUMBER_EPSILONS = bezierCurves.size() * bezierCurves[0].getControlPoints().size();     // Количество эпсилон для СЛАУ
-    const double MATRIX_SIZE = NUMBER_BASIS_FUNCS * (NUMBER_BEZIER_CURVES + NUMBER_BEZIER_CURVES - 1);  // Размер матрицы коэффициентов
-
-    std::vector<std::vector<double>> coefficients(MATRIX_SIZE, std::vector<double>(MATRIX_SIZE));       // Матрица коэффициентов
-
-    // Заполняем матрицу коэффициентами
-    for (size_t i = 0; i != NUMBER_EPSILONS; ++i) // Заполняем двойками по главной диагонали
+    // Заполняет элементы матрицы коээфициентов над её главной диагональю
+    void fillUpperTriangularMatrix(std::vector<std::vector<double>>& coefficientMatrix, std::vector<std::vector<double>>& basisFuncs, size_t numberEpsilons, size_t numberBreakPoints)
     {
-        coefficients[i][i] = 2;
-    }
+        // Количество базисных функций
+        const size_t NUMBER_BASIS_FUNCS = basisFuncs.size();
 
-    // Заполняем треугольники базисных функций в матрице коэффициентов сверху вниз
-    for (size_t breakPointCounter = 0; breakPointCounter != NUMBER_BREAK_POINTS; ++breakPointCounter) // Каждый breakPoint - один треугольник базисных функций в coefficients
-    {
-        size_t reverseRow = NUMBER_BASIS_FUNCS * 2 - 1 + NUMBER_BASIS_FUNCS * breakPointCounter; // Строка начала нижней части треугольника
-        size_t colBasisFunc = 0; // Столбец базисных функций
-
-        for (size_t row = 0 + NUMBER_BASIS_FUNCS * breakPointCounter; row != NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointCounter; ++row) // Итерируемся по общему числу базисных функций
+        // Каждый breakPoint - одна итерация заполнения базисных функций в coefficientMatrix
+        for (size_t breakPointsCounter = 0; breakPointsCounter != numberBreakPoints; ++breakPointsCounter)
         {
-            size_t rowBasisFunc = 0; // Строка базисных функций
-            double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc]; // Предыдущее значение базисной функции (для сохранения знаков + или -)
+            // Реверс строка для противоположной сторны треугольника
+            size_t reverseRow = NUMBER_BASIS_FUNCS * 2 - 1 + NUMBER_BASIS_FUNCS * breakPointsCounter;
+            size_t colBasisFunc = 0;
 
-            for (size_t col = NUMBER_EPSILONS + NUMBER_BASIS_FUNCS * breakPointCounter; col != NUMBER_EPSILONS + NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointCounter; ++col) // Итерируемся по общему числу производных базисных функций
+            // Итерируемся по общему числу базисных функций
+            for (size_t row = 0 + NUMBER_BASIS_FUNCS * breakPointsCounter; row != NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointsCounter; ++row)
             {
-                double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
-                coefficients[row][col] = basisFuncVal;
+                // Строка базисных функций
+                size_t rowBasisFunc = 0;
+                // Предыдущее значение базисной функции (для правильного заполнения коэффициентов с нужным знаком "+" или "-")
+                double prevBasisFuncVal = basisFuncs[rowBasisFunc][colBasisFunc];
 
-                if (basisFuncVal != 0)
+                for (size_t col = numberEpsilons + NUMBER_BASIS_FUNCS * breakPointsCounter; col != numberEpsilons + NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointsCounter; ++col)
                 {
-                    if (prevBasisFuncVal < 0 && basisFuncVal < 0)
+                    double nextBasisFuncVal = basisFuncs[rowBasisFunc][colBasisFunc];
+                    coefficientMatrix[row][col] = nextBasisFuncVal;
+
+                    // Регулируем знак у противоположной части базисных функций
+                    if (prevBasisFuncVal < 0 && nextBasisFuncVal < 0)
                     {
-                        basisFuncVal *= -1;
+                        nextBasisFuncVal *= -1;
                     }
-                    else if (prevBasisFuncVal > 0 && basisFuncVal > 0)
+                    else if (prevBasisFuncVal >= 0 && nextBasisFuncVal > 0)
                     {
-                        basisFuncVal *= -1;
+                        nextBasisFuncVal *= -1;
                     }
-                    else if (prevBasisFuncVal == 0 && basisFuncVal > 0)
-                    {
-                        basisFuncVal *= -1;
-                    }
+
+                    coefficientMatrix[reverseRow][col] = nextBasisFuncVal;
+                    prevBasisFuncVal = nextBasisFuncVal;
+                    ++rowBasisFunc;
                 }
 
-                coefficients[reverseRow][col] = basisFuncVal;
-                prevBasisFuncVal = basisFuncVal;
+                --reverseRow;
+                ++colBasisFunc;
+            }
+        }
+    }
+
+    // Заполняет элементы матрицы коээфициентов под её главной диагональю
+    void fillLowerTriangularMatrix(std::vector<std::vector<double>>& coefficientMatrix, std::vector<std::vector<double>>& basisFuncs, size_t numberEpsilons, size_t numberBreakPoints)
+    {
+        // Количество базисных функций
+        const size_t NUMBER_BASIS_FUNCS = basisFuncs.size();
+
+        // Каждый breakPoint - одна итерация заполнения базисных функций в coefficientMatrix
+        for (size_t breakPointCounter = 0; breakPointCounter != numberBreakPoints; ++breakPointCounter)
+        {
+            size_t rowBasisFunc = 0;
+
+            // Итерируемся по общему числу базисных функций
+            for (size_t row = numberEpsilons + NUMBER_BASIS_FUNCS * breakPointCounter; row != numberEpsilons + NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointCounter; ++row)
+            {
+                // Реверс столбец для противоположной части
+                size_t reverseCol = NUMBER_BASIS_FUNCS * 2 - 1 + NUMBER_BASIS_FUNCS * breakPointCounter;
+                size_t colBasisFunc = 0;
+                // Предыдущее значение базисной функции (для правильного заполнения коэффициентов с нужным знаком "+" или "-")
+                double prevBasisFuncVal = basisFuncs[rowBasisFunc][colBasisFunc];
+
+                for (size_t col = 0 + NUMBER_BASIS_FUNCS * breakPointCounter; col != NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointCounter; ++col)
+                {
+                    double nextBasisFuncVal = basisFuncs[rowBasisFunc][colBasisFunc];
+                    coefficientMatrix[row][col] = nextBasisFuncVal;
+
+                    // Регулируем знак у противоположной части базисных функций
+                    if (prevBasisFuncVal < 0 && nextBasisFuncVal < 0 && col != NUMBER_BASIS_FUNCS * breakPointCounter)
+                    {
+                        nextBasisFuncVal *= -1;
+                    }
+                    else if (prevBasisFuncVal >= 0 && nextBasisFuncVal > 0)
+                    {
+                        nextBasisFuncVal *= -1;
+                    }
+
+                    prevBasisFuncVal = nextBasisFuncVal;
+                    coefficientMatrix[row][reverseCol] = nextBasisFuncVal;
+                    ++colBasisFunc;
+                    --reverseCol;
+                }
 
                 ++rowBasisFunc;
             }
-
-            --reverseRow;
-            ++colBasisFunc;
         }
     }
 
-    // Треугольники слева - направо
-    for (size_t breakPointCounter = 0; breakPointCounter != NUMBER_BREAK_POINTS; ++breakPointCounter) // Каждый breakPoint - один треугольник базисных функций в coefficients
+    // Заполнение матрицу коэффициентов
+    static void fillCoefficientsMatrix(std::vector<std::vector<double>>& coefficientMatrix, std::vector<std::vector<double>>& basisFuncs, size_t numberEpsilons, size_t numberBreakPoints)
     {
-        size_t rowBasisFunc = 0; // Строка базисных функций
-
-        for (size_t row = NUMBER_EPSILONS + NUMBER_BASIS_FUNCS * breakPointCounter; row != NUMBER_EPSILONS + NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointCounter; ++row) // Итерируемся по общему числу базисных функций
+        // Заполняем двойками главную диагональ
+        for (size_t i = 0; i != numberEpsilons; ++i)
         {
-            size_t reverseCol = NUMBER_BASIS_FUNCS * 2 - 1 + NUMBER_BASIS_FUNCS * breakPointCounter; // Столбец начала правой части треугольника
-            size_t colBasisFunc = 0;    // Столбец базисных функций
-            double prevBasisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
+            coefficientMatrix[i][i] = 2;
+        }
 
-            for (size_t col = 0 + NUMBER_BASIS_FUNCS * breakPointCounter; col !=  NUMBER_BASIS_FUNCS + NUMBER_BASIS_FUNCS * breakPointCounter; ++col) // Итерируемся по общему числу производных базисных функций
+        // Заполняем матрицу коэффциентов базисными функциями
+        fillUpperTriangularMatrix(coefficientMatrix, basisFuncs, numberEpsilons, numberBreakPoints);
+        fillLowerTriangularMatrix(coefficientMatrix, basisFuncs, numberEpsilons, numberBreakPoints);
+    }
+
+    // Фиксирует первую и последнюю точки кривых и их первые произнодеые (зануление определенных столбцов и строк у матрицы коэффициентов). По умолчанию фиксируются все 4 точки
+    static void fixPointAtCurve(std::vector<std::vector<double>>& coefficientMatrix, size_t numberEpsilons, size_t numberBasisFuncs, bool fixStartPoint = true, bool fixEndPoint = true, bool fixFirstDivStartPoint = true, bool fixFirstDivEndPoint = true)
+    {
+        const size_t MATRIX_SIZE = coefficientMatrix.size();
+
+        // Фиксация первой граничной точки кривой
+        if(fixStartPoint)
+        {
+            for (size_t i = numberEpsilons; i != numberEpsilons + numberBasisFuncs; ++i)
             {
-                double basisFuncVal = basisFuncsAndTheirDerivs[rowBasisFunc][colBasisFunc];
-                coefficients[row][col] = basisFuncVal;
+                coefficientMatrix[0][i] = 0;
+            }
+        }
 
-                if (basisFuncVal != 0)
+        // Фиксация последней граничной точки кривой
+        if (fixEndPoint)
+        {
+            for (size_t col = numberEpsilons + numberBasisFuncs; col != MATRIX_SIZE; ++col)
+            {
+                coefficientMatrix[numberEpsilons - 1][col] = 0;
+            }
+        }
+
+        // Фиксация первой производной первой граничной точки кривой
+        if (fixFirstDivStartPoint)
+        {
+            for (size_t i = numberEpsilons; i != numberEpsilons + numberBasisFuncs; ++i)
+            {
+                coefficientMatrix[1][i] = 0;
+            }
+        }
+
+        // Фиксация первой производной последней граничной точки кривой
+        if (fixFirstDivEndPoint)
+        {
+            for (size_t col = numberEpsilons + numberBasisFuncs; col != MATRIX_SIZE; ++col)
+            {
+                coefficientMatrix[numberEpsilons - 2][col] = 0;
+            }
+        }
+    }
+
+    void fillFreeMemberMatrix(std::vector<Point3D>& freeMembersMatrix, const std::vector<std::vector<Point3D>>& controlPointsBezierCurves, const std::vector<std::vector<double>>& basisFunc, const std::vector<std::vector<double>>& reverseBasisFunc, size_t numberEpsilons)
+    {
+        size_t indexFreeMembers = numberEpsilons;
+
+        for (size_t row = 0; row != controlPointsBezierCurves.size() - 1; ++row)
+        {
+            size_t rowBasisFunc = 0;
+
+            for (size_t col = 0; col != basisFunc[0].size(); ++col)
+            {
+                for (size_t i = 0; i != controlPointsBezierCurves[0].size(); ++i)
                 {
-                    if (prevBasisFuncVal < 0 && basisFuncVal < 0 && col != NUMBER_BASIS_FUNCS * breakPointCounter) // Если предыдущий был отрицательным и следующий тоже отрицательный
-                    {
-                        basisFuncVal *= -1;
-                    }
-                    else if (prevBasisFuncVal > 0 && basisFuncVal > 0)
-                    {
-                        basisFuncVal *= -1;
-                    }
-                    else if (prevBasisFuncVal == 0 && basisFuncVal > 0)
-                    {
-                        basisFuncVal *= -1;
-                    }
+                    // Текущая кривая
+                    freeMembersMatrix[indexFreeMembers] += controlPointsBezierCurves[row][i] * -basisFunc[rowBasisFunc][i];
+                    // След. кривая
+                    freeMembersMatrix[indexFreeMembers] += controlPointsBezierCurves[row + 1][i] * reverseBasisFunc[rowBasisFunc][i];
                 }
 
-                prevBasisFuncVal = basisFuncVal;
-                coefficients[row][reverseCol] = basisFuncVal;
-
-                ++colBasisFunc;
-                --reverseCol;
+                ++rowBasisFunc;
+                ++indexFreeMembers;
             }
-
-            ++rowBasisFunc;
         }
     }
 
-    bool fixStartPoint = true;  // Фиксация первой граничной точки
-    bool fixEndPoint = true;    // Фиксация последней граничной точки
-    bool fixFirstDivStartPoint = false;     // Фиксация первой производной первой граничной точки
-    bool fixFirstDivEndPoint = false;       // Фиксация первой производной последней граничной точки
-
-    if (fixStartPoint) // Фиксация первой граничной точки
+    // Возвращает точки сдвига для соблюдения полного сопряжения кривой
+    static std::vector<Point3D> calcShiftPoints(const std::vector<std::vector<double>>& coefficientMatrix, const std::vector<Point3D>& freeMembersMatrix)
     {
-        for (size_t i = NUMBER_EPSILONS; i != NUMBER_EPSILONS + NUMBER_BASIS_FUNCS; ++i)
-        {
-            coefficients[0][i] = 0;
+        // Создаём указатель на интерфейс операций СЛАУ
+        auto operation = IMatrixOperations::GetMatrixOperationsClass(OperationClass::eigen);
 
-            coefficients[1][i] = 0;
-            coefficients[2][i] = 0;
-            coefficients[3][i] = 0;
-            coefficients[4][i] = 0;
-            //coefficients[5][i] = 0;
+        if (operation == nullptr)
+        {
+            throw "Error! conjugateCurve: operation = nullptr";;
         }
+
+        // Вычисляем определитель матрицы коэффициентов
+        double coefficientMatrixDet = operation->getMatrixDet(coefficientMatrix);
+
+        if (coefficientMatrixDet == 0)
+        {
+            throw "Error! coefficientMatrixDet = 0";
+        }
+
+        // Решаем СЛАУ и возвращаем ответ
+        return operation->solveEquation(coefficientMatrix, freeMembersMatrix);
     }
 
-    if (fixEndPoint) // Фиксация последней граничной точки
+    // Возвращает точки сдвига для соблюдения полного сопряжения кривой
+    static std::vector<Point3D> calculateShiftPoints(const std::vector<std::vector<double>>& coefficientMatrix, const std::vector<Point3D>& freeMembersMatrix)
     {
-        for (size_t col = NUMBER_EPSILONS + NUMBER_BASIS_FUNCS; col != MATRIX_SIZE; ++col)
-        {
-            coefficients[NUMBER_EPSILONS - 1][col] = 0;
+        // Создаём указатель на интерфейс операций СЛАУ
+        auto operation = IMatrixOperations::GetMatrixOperationsClass(OperationClass::eigen);
 
-            coefficients[NUMBER_EPSILONS - 2][col] = 0;
-            coefficients[NUMBER_EPSILONS - 3][col] = 0;
-            coefficients[NUMBER_EPSILONS - 4][col] = 0;
-            coefficients[NUMBER_EPSILONS - 5][col] = 0;
-            //coefficients[NUMBER_EPSILONS - 6][col] = 0;
+        if (operation == nullptr)
+        {
+            throw "Error! conjugateCurve: operation = nullptr";;
         }
+
+        // Вычисляем определитель матрицы коэффициентов
+        double coefficientMatrixDet = operation->getMatrixDet(coefficientMatrix);
+
+        if (coefficientMatrixDet == 0)
+        {
+            throw "Error! coefficientMatrixDet = 0";
+        }
+
+        // Решаем СЛАУ и возвращаем ответ
+        return operation->solveEquation(coefficientMatrix, freeMembersMatrix);
     }
 
-    if (fixFirstDivStartPoint) // Фиксация первой производной первой граничной точки
+    std::vector<Curve> correctionPoints(std::vector<std::vector<Point3D>>& controlPointsBezierCurves, std::vector<Point3D>& shiftPoints, size_t numberBezierCurves, int degree)
     {
-        for (size_t i = NUMBER_EPSILONS; i != NUMBER_EPSILONS + NUMBER_BASIS_FUNCS; ++i)
+        int tempCounter = 0;
+        std::vector<Curve> newBezierCurves;
+
+
+        for (size_t i = 0; i != numberBezierCurves; ++i)
         {
-            coefficients[1][i] = 0;
-        }
-    }
-
-    if (fixFirstDivEndPoint) // Фиксация первой производной последней граничной точки
-    {
-        for (size_t col = NUMBER_EPSILONS + NUMBER_BASIS_FUNCS; col != MATRIX_SIZE; ++col)
-        {
-            coefficients[NUMBER_EPSILONS - 2][col] = 0;
-        }
-    }
-
-
-   std::vector<std::vector<Point3D>> controlPointsBezierCurves (NUMBER_BEZIER_CURVES, std::vector<Point3D>());
-
-   for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i)
-   {
-        controlPointsBezierCurves[i] = bezierCurves[i].getControlPoints();
-   }
-
-   std::vector<Point3D> freeMembers(MATRIX_SIZE);
-   size_t indexFreeMembers = NUMBER_EPSILONS;
-
-   parameter = 0;
-   span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
-   std::vector<std::vector<double>> basisFuncsAndTheirDerivsRev = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
-
-   for (size_t row = 0; row != controlPointsBezierCurves.size() - 1; ++row)
-   {
-        size_t rowBasisFunc = 0;
-
-        for (size_t col = 0; col != basisFuncsAndTheirDerivs[0].size(); ++col)
-        {
-            for (size_t i = 0; i != controlPointsBezierCurves[0].size(); ++i)
+            for (size_t j = 0; j != controlPointsBezierCurves[i].size(); ++j) // Регулируем котрольные точки Безье кривых для сопряжения
             {
-                freeMembers[indexFreeMembers] += controlPointsBezierCurves[row][i] * -basisFuncsAndTheirDerivs[rowBasisFunc][i]; // Текущая кривая
-                freeMembers[indexFreeMembers] += controlPointsBezierCurves[row + 1][i] * basisFuncsAndTheirDerivsRev[rowBasisFunc][i]; // След. кривая
+                controlPointsBezierCurves[i][j] += shiftPoints[tempCounter++];
             }
 
-            ++rowBasisFunc;
-            ++indexFreeMembers;
-        }
-   }
-
-   auto operation = IMatrixOperations::GetMatrixOperationsClass(OperationClass::eigen); // Создаём указатель на интерфейс операций СЛАУ
-
-   if (operation == nullptr)
-   {
-        qDebug() << "Error! attachAllBezierCurves: operation == nullptr";;
-        return {};
-   }
-
-   qDebug() << "Coefficients matrix info:" <<
-           "\nRank = " << operation->getMatrixRank(coefficients) <<
-           "\nDet = " << operation->getMatrixDet(coefficients) << '\n';
-
-   std::vector<Point3D> solution = operation->solveEquation(coefficients, freeMembers); // Решаем СЛАУ
-   int tempCounter = 0;
-   std::vector<Curve> newBezierCurves;
-
-   for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i)
-   {
-        for (size_t j = 0; j != controlPointsBezierCurves[i].size(); ++j) // Регулируем котрольные точки Безье кривых для сопряжения
-        {
-            controlPointsBezierCurves[i][j] += solution[tempCounter++];
+            // Создаём новую кривую Безье и добавляем в вектор, чтобы функция возвратила его
+            const int CURVE_NUM_POINTS = 1001;   // Кол-во точек, из которых будет состоять кривая
+            Curve bezierCurve(controlPointsBezierCurves[i], std::vector<double> (controlPointsBezierCurves[0].size(), 1), degree, CURVE_NUM_POINTS);
+            newBezierCurves.push_back(bezierCurve);
         }
 
-        // Создаём новую кривую Безье и добавляем в вектор, чтобы функция возвратила его
-        const int CURVE_NUM_POINTS = 1001;   // Кол-во точек, из которых будет состоять кривая
-        Curve bezierCurve(controlPointsBezierCurves[i], std::vector<double> (controlPointsBezierCurves[0].size(), 1), bezierCurves[0].getDegree(), CURVE_NUM_POINTS);
-        newBezierCurves.push_back(bezierCurve);
-   }
+        return newBezierCurves;
+    }
+}
 
-   return newBezierCurves;
+// Делает кривую непрерывной, соединяя её в точках разрывов
+std::vector<Curve> MergeCurves::attachAllBezierCurves(const Curve& curve)
+{
+    // Разбиваем NURBS кривую на кривые Безье
+    std::vector<Curve> bezierCurves = UsefulUtils::splittingСurveIntoBezierCurves(curve);
+
+    // Рассчитываем базисные функции у кривой в конечной параметрической точке (базисные функции у всех кривых одинаковые)
+    double curveParameter = 1;
+    int span = CalcCurve::findSpanForParameter(curveParameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
+    std::vector<std::vector<double>> basisFuncs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), curveParameter, span, bezierCurves[0].getDegree());
+
+    const size_t NUMBER_BASIS_FUNCS = static_cast<size_t>(curve.getDegree()) + 1;                       // Количество базисных функций
+    const size_t NUMBER_BEZIER_CURVES = bezierCurves.size();                                            // Количество кривых Безье
+    const size_t NUMBER_BREAK_POINTS = NUMBER_BEZIER_CURVES - 1;                                        // Количество потенциальных точек разрыва между кривыми
+    const size_t NUMBER_EPSILONS = bezierCurves.size() * bezierCurves[0].getControlPoints().size();     // Количество эпсилон, которые будут регулировать контрольные точки
+    const size_t MATRIX_SIZE = NUMBER_BASIS_FUNCS * (NUMBER_BEZIER_CURVES + NUMBER_BEZIER_CURVES - 1);  // Размер матрицы коэффициентов
+
+    // Матрица коэффициентов
+    std::vector<std::vector<double>> coefficientMatrix(MATRIX_SIZE, std::vector<double>(MATRIX_SIZE));
+
+    // Заполняем матрицу коэффициентов
+    Impl::fillCoefficientsMatrix(coefficientMatrix, basisFuncs, NUMBER_EPSILONS, NUMBER_BREAK_POINTS);
+
+    // Фиксируем первую и последнюю точки и их первые производные
+    Impl::fixPointAtCurve(coefficientMatrix, NUMBER_EPSILONS, NUMBER_BASIS_FUNCS, true, true, true, true);
+
+    // Контрольные точки кривых Безье
+    std::vector<std::vector<Point3D>> controlPointsBezierCurves(NUMBER_BEZIER_CURVES);
+
+    for (size_t i = 0; i != NUMBER_BEZIER_CURVES; ++i)
+    {
+        controlPointsBezierCurves[i] = bezierCurves[i].getControlPoints();
+    }
+
+    // Матрица свободных членов
+    std::vector<Point3D> freeMembersMatrix(MATRIX_SIZE);
+
+    // Вычисляем реверсивные базисные функции и их производные в параметре 0
+    double parameter = 0;
+    span = CalcCurve::findSpanForParameter(parameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
+    std::vector<std::vector<double>> reverseBasisFuncs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), parameter, span, bezierCurves[0].getDegree());
+
+    // Заполняем матрицу свободных членов
+    Impl::fillFreeMemberMatrix(freeMembersMatrix, controlPointsBezierCurves, basisFuncs, reverseBasisFuncs, NUMBER_EPSILONS);
+
+    // Вычисляем точки смещения для новых контрольных точек
+    std::vector<Point3D> shiftPoints = Impl::calculateShiftPoints(coefficientMatrix, freeMembersMatrix);
+
+     // Делаем сдивг исходных контрольных точек для сопряжения
+    std::vector<Curve> newBezierCurves = Impl::correctionPoints(controlPointsBezierCurves, shiftPoints, NUMBER_BEZIER_CURVES, bezierCurves[0].getDegree());
+
+    return newBezierCurves;
 }

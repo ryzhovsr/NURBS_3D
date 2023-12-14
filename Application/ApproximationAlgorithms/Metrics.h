@@ -17,6 +17,6 @@ public:
     // Рассчитывает квадратичную разность между двух кривых
     static double calcQuadraticDifference(const Curve &Curve1, const Curve &Curve2);
 
-     // Рассчитывает точки двух кривых метрики Хаусдорфа
+    // Рассчитывает точки двух кривых метрики Хаусдорфа
     static std::pair<CurvePoint, CurvePoint> calcPointsHausdorffMetric(const Curve &Curve1, const Curve &Curve2);
 };

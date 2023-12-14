@@ -9,7 +9,8 @@ public:
     ResourceApproxAlgs(IApproxAlgs* approxAlgorithm);
     ~ResourceApproxAlgs();
 
-    void setStrategy(IApproxAlgs* approxAlgorithm); // Установить стратегию аппроксимации
+    // Установить стратегию аппроксимации
+    void setStrategy(IApproxAlgs* approxAlgorithm);
 
     Curve approximateCurve(const Curve &curve, int degreeApprox);
 

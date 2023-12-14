@@ -9,6 +9,6 @@ public:
     Curve attachTwoBezierCurves(const Curve &curve1, const Curve &curve2, bool fixateStartEndPoints);
 
     // Соединяет все кривые Безье в векторе
-    std::vector<Curve> attachAllBezierCurves(std::vector<Curve> &bezierCurves);
+    std::vector<Curve> attachAllBezierCurves(const Curve &bezierCurves);
 };
 

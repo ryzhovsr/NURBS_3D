@@ -14,7 +14,9 @@ struct Point3D
     Point3D operator-(double value) const;
 
     Point3D operator*(double scalar) const;
-    friend Point3D operator*(double scalar, Point3D p) {
+
+    friend Point3D operator*(double scalar, Point3D p)
+    {
         return Point3D(p.x * scalar, p.y * scalar, p.z * scalar);
     }
 

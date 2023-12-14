@@ -1,12 +1,13 @@
 #include "AlgBasedCurveConjugation.h"
 #include <QDebug>
-#include <Curve3d/CalcCurve.h>
+#include "Curve3d/CalcCurve.h"
 #include "Utils/MathUtils.h"
 #include "Utils/IMatrixOperations.h"
 
 Curve AlgBasedCurveConjugation::approximateCurve(const Curve &curve, int degreeApprox) const
 {
-    int initialDegree = curve.getDegree(); // Исходная степень кривой
+     // Исходная степень кривой
+    int initialDegree = curve.getDegree();
 
     if (curve.getControlPoints().size() - initialDegree != 2)
         qDebug() << "Error! AlgBasedCurveConjugation: степень кривой должна быть на 2 меньше кол-ва контрольных точек!";
@@ -33,7 +34,8 @@ Curve AlgBasedCurveConjugation::approximateCurve(const Curve &curve, int degreeA
 
     for (int currentDegree = tempCurve.getDegree(); currentDegree > degreeApprox; --currentDegree)
     {
-        tempCurve = redefineControlPointsNodalVectorCurve(tempCurve); // Добавляем кратный узел в кривую
+        // Добавляем кратный узел в кривую
+        tempCurve = redefineControlPointsNodalVectorCurve(tempCurve);
 
         tempControlPoints = tempCurve.getControlPoints();
         std::vector<Point3D> tempControlPoints_1(tempControlPoints.begin(), tempControlPoints.end() -  tempCurve.getDegree());
