@@ -5,6 +5,7 @@
 #include "Curve3d/CalcCurve.h"
 #include "Utils/MergeCurves.h"
 #include "Utils/MathUtils.h"
+#include "ApproximationAlgorithms/Metrics.h"
 #include "Utils/UsefulUtils.h"
 
 // В консоль пишет координаты X и Y у курсора при дабл клике
@@ -91,7 +92,7 @@ MainWindow::MainWindow(QWidget *parent)
     std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3};
 
     MergeCurves merge;
-    bezierCurves = merge.attachAllBezierCurves(bezierCurves);
+    bezierCurves = merge.attachAllBezierCurves(originalCurve);
 
     for (const auto& bezierCurve: bezierCurves)
     {
@@ -99,14 +100,14 @@ MainWindow::MainWindow(QWidget *parent)
         //canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
     }
 
-    Curve merdgedCurve = bezierCurvesToCurve(bezierCurves, DEGREE, CURVE_NUM_POINTS);
+    Curve merdgedCurve = UsefulUtils::bezierCurvesToNURBSCurve(bezierCurves, DEGREE, CURVE_NUM_POINTS);
 
     merdgedCurve.setNodalVector({0, 0, 0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1, 1, 1});
     canvas.drawCurve(merdgedCurve, "", QColor(200, 0, 0));
 
-    checkCurveBreakPoint(merdgedCurve, 0.3333333333333333);
-    checkCurveBreakPoint(merdgedCurve, 0.6666666666666666);
-    checkAllCurveBreaks(merdgedCurve);
+    UsefulUtils::checkCurveBreakPoint(merdgedCurve, 0.3333333333333333);
+    UsefulUtils::checkCurveBreakPoint(merdgedCurve, 0.6666666666666666);
+    UsefulUtils::checkAllCurveBreaks(merdgedCurve);
 }
 */
 
@@ -341,7 +342,7 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
     const std::vector<double> WEIGHTS(CONTROL_POINTS.size(), 1);   // Весовые коэффициенты контрольных точек
-    const int CURVE_NUM_POINTS = 2001;   // Кол-во точек, из которых будет состоять кривая
+    const int CURVE_NUM_POINTS = 501;   // Кол-во точек, из которых будет состоять кривая
     const int DEGREE = 5;   // Степень кривой
 
     Curve originalCurve(CONTROL_POINTS, WEIGHTS, DEGREE, CURVE_NUM_POINTS);
@@ -538,6 +539,19 @@ MainWindow::MainWindow(QWidget *parent)
     //}
 
     Curve merdgedCurve = UsefulUtils::bezierCurvesToNURBSCurve(bezierCurves, DEGREE, CURVE_NUM_POINTS);
+
+    UsefulUtils::outNURBSPoints(originalCurve);
+    UsefulUtils::outNURBSPoints(merdgedCurve);
+
+    qDebug() << "До:\n"
+             << "Кривизна:" << Metrics::calcCurveCurvature(originalCurve) << '\n'
+             << "Метрика Хаусдорфа:" << Metrics::calcHausdorffMetric(originalCurve, merdgedCurve) << '\n';
+
+    qDebug() << "После:\n"
+             << "Кривизна:" << Metrics::calcCurveCurvature(merdgedCurve)
+             << '\n';
+
+    qDebug() << "Квадратичная разность:" << Metrics::calcQuadraticDifference(originalCurve, merdgedCurve);
 
     //merdgedCurve.setNodalVector(NODAL_VECTOR);
     canvas.drawCurve(merdgedCurve, "", QColor(200, 0, 0));

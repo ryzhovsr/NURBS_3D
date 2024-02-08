@@ -20,6 +20,9 @@ public:
 
     // Разбивает NURBS кривую на кривые Безье
     static std::vector<Curve> splittingСurveIntoBezierCurves(const Curve& originalCurve);
+
+    // Запись точек кривой в файл
+    static void outNURBSPoints(const Curve& curve);
 };
 
 

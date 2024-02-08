@@ -1,6 +1,7 @@
 #include "UsefulUtils.h"
 #include "Curve3D/CalcCurve.h"
 #include "Utils/MathUtils.h"
+#include <fstream>
 
 // Переводит вектор кривых Безье в одну кривую NURBS
 Curve UsefulUtils::bezierCurvesToNURBSCurve(const std::vector<Curve> &bezierCurves, int degree, int curveNumPoints)
@@ -154,3 +155,22 @@ std::vector<Curve> UsefulUtils::splittingСurveIntoBezierCurves(const Curve& ori
 
     return bezierCurves;
 }
+
+// Запись точек кривой в файл
+void UsefulUtils::outNURBSPoints(const Curve& curve)
+{
+    std::ofstream outFile("NURBSPoints.txt");
+    if (outFile.is_open())
+    {
+        for (const auto& curvePoints: curve.getCurvePoints())
+        {
+            outFile << curvePoints.x << " " << curvePoints.y << " " << curvePoints.z << '\n';
+        }
+        outFile.close();
+    }
+    else
+    {
+        qDebug() << "outNURBSPoints. Unable to open file for writing!";
+    }
+}
+

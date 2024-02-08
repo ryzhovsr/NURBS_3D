@@ -55,7 +55,7 @@ HEADERS += \
 FORMS += \
     MainWindow.ui
 
-INCLUDEPATH += C:\Main\Projects\NURBS_2D\Dependencies\include\eigen-3.4.0
+INCLUDEPATH += C:\Main\Projects\NURBS_3D\Dependencies\include\eigen-3.4.0
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
