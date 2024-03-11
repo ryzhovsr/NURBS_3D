@@ -365,7 +365,8 @@ namespace Impl
     }
 
     // Возвращает точки сдвига для соблюдения полного сопряжения кривой
-    static std::vector<Point3D> calculateShiftPoints(const std::vector<std::vector<double>>& coefficientMatrix, const std::vector<Point3D>& freeMembersMatrix)
+    static std::vector<Point3D> calculateShiftPoints(const std::vector<std::vector<double>>& coefficientMatrix,
+                                                     const std::vector<Point3D>& freeMembersMatrix)
     {
         // Создаём указатель на интерфейс операций СЛАУ
         auto operation = IMatrixOperations::GetMatrixOperationsClass(OperationClass::eigen);
@@ -410,10 +411,10 @@ namespace Impl
     }
 }
 
-// Делает кривую непрерывной, соединяя её в точках разрывов
+
 std::vector<Curve> MergeCurves::attachAllBezierCurves(const Curve& curve)
 {
-    // Разбиваем NURBS кривую на кривые Безье
+    // Разбиваем составную кривую на кривые Безье
     std::vector<Curve> bezierCurves = UsefulUtils::splittingСurveIntoBezierCurves(curve);
 
     // Рассчитываем базисные функции у кривой в конечной параметрической точке (базисные функции у всех кривых одинаковые)
@@ -421,11 +422,16 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(const Curve& curve)
     int span = CalcCurve::findSpanForParameter(curveParameter, bezierCurves[0].getNodalVector(), bezierCurves[0].getDegree());
     std::vector<std::vector<double>> basisFuncs = CalcCurve::calcBasisFuncsAndTheirDerivs(bezierCurves[0].getNodalVector(), curveParameter, span, bezierCurves[0].getDegree());
 
-    const size_t NUMBER_BASIS_FUNCS = static_cast<size_t>(curve.getDegree()) + 1;                       // Количество базисных функций
-    const size_t NUMBER_BEZIER_CURVES = bezierCurves.size();                                            // Количество кривых Безье
-    const size_t NUMBER_BREAK_POINTS = NUMBER_BEZIER_CURVES - 1;                                        // Количество потенциальных точек разрыва между кривыми
-    const size_t NUMBER_EPSILONS = bezierCurves.size() * bezierCurves[0].getControlPoints().size();     // Количество эпсилон, которые будут регулировать контрольные точки
-    const size_t MATRIX_SIZE = NUMBER_BASIS_FUNCS * (NUMBER_BEZIER_CURVES + NUMBER_BEZIER_CURVES - 1);  // Размер матрицы коэффициентов
+    // Количество базисных функций
+    const size_t NUMBER_BASIS_FUNCS = static_cast<size_t>(curve.getDegree()) + 1;
+    // Количество кривых Безье
+    const size_t NUMBER_BEZIER_CURVES = bezierCurves.size();
+    // Количество потенциальных точек разрыва между кривыми
+    const size_t NUMBER_BREAK_POINTS = NUMBER_BEZIER_CURVES - 1;
+    // Количество эпсилон, которые будут регулировать контрольные точки
+    const size_t NUMBER_EPSILONS = bezierCurves.size() * bezierCurves[0].getControlPoints().size();
+    // Размер матрицы коэффициентов
+    const size_t MATRIX_SIZE = NUMBER_BASIS_FUNCS * (NUMBER_BEZIER_CURVES + NUMBER_BEZIER_CURVES - 1);
 
     // Матрица коэффициентов
     std::vector<std::vector<double>> coefficientMatrix(MATRIX_SIZE, std::vector<double>(MATRIX_SIZE));
@@ -463,3 +469,4 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(const Curve& curve)
 
     return newBezierCurves;
 }
+

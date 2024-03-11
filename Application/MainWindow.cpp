@@ -102,7 +102,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     Curve merdgedCurve = UsefulUtils::bezierCurvesToNURBSCurve(bezierCurves, DEGREE, CURVE_NUM_POINTS);
 
-    merdgedCurve.setNodalVector({0, 0, 0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1, 1, 1});
+    //merdgedCurve.setNodalVector({0, 0, 0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1, 1, 1});
     canvas.drawCurve(merdgedCurve, "", QColor(200, 0, 0));
 
     UsefulUtils::checkCurveBreakPoint(merdgedCurve, 0.3333333333333333);
@@ -111,8 +111,9 @@ MainWindow::MainWindow(QWidget *parent)
 }
 */
 
+
 // Тестовый пример соединения
-/*
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -121,19 +122,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     const std::vector<Point3D> CONTROL_POINTS
     {
-        {1, 1.2, 0},
-        {1.35, 1.25, 0},
-        {1.425, 1.3199999999999998, 0},
-        {1.7125, 1.3733333333333333, 0},
-        {2, 1.4266666666666667, 0},
-        {2.5, 1.4633333333333334, 0},
-        {2.783333333333333, 1.4766666666666666, 0},
-        {3.066666666666667, 1.49, 0},
-        {3.1333333333333337, 1.48, 0},
-        {3.491666666666667, 1.455, 0},
-        {3.85, 1.43, 0},
-        {4.5, 1.39, 0},
-        {5, 1.2, 0},
+        {10, 12, 0},
+        {13.5, 12.5, 0},
+        {14.25, 13.199999999999998, 0},
+        {17.125, 13.733333333333333, 0},
+        {20, 14.266666666666667, 0},
+        {25, 14.633333333333334, 0},
+        {27.83333333333333, 14.766666666666666, 0},
+        {30.66666666666667, 14.9, 0},
+        {31.333333333333337, 14.8, 0},
+        {34.91666666666667, 14.55, 0},
+        {38.5, 14.3, 0},
+        {45, 13.9, 0},
+        {50, 12, 0},
     };
 
     const std::vector<double> NODAL_VECTOR
@@ -146,7 +147,7 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
     const std::vector<double> WEIGHTS(CONTROL_POINTS.size(), 1);   // Весовые коэффициенты контрольных точек
-    const int CURVE_NUM_POINTS = 61;   // Кол-во точек, из которых будет состоять кривая
+    const int CURVE_NUM_POINTS = 501;   // Кол-во точек, из которых будет состоять кривая
     const int DEGREE = 3;   // Степень кривой
 
     Curve originalCurve(CONTROL_POINTS, WEIGHTS, DEGREE, CURVE_NUM_POINTS);
@@ -166,41 +167,41 @@ MainWindow::MainWindow(QWidget *parent)
 
     std::vector<Point3D> controlPointsBezier_1
     {
-        {1, 1.2, 0},
-        {1.35, 1.25, 0},
-        {1.425, 1.3199999999999998, 0},
-        {1.7125, 1.3733333333333333, 0}
+        {10, 12, 0},
+        {13.5, 12.5, 0},
+        {14.25, 13.199999999999998, 0},
+        {17.125, 13.733333333333333, 0}
     };
 
     std::vector<Point3D> controlPointsBezier_2
     {
-        {1.7125, 1.3733333333333333, 0},
-        {2, 1.4266666666666667, 0},
-        {2.5, 1.4633333333333334, 0},
-        {2.783333333333333, 1.4766666666666666, 0}
+        {17.125, 13.733333333333333, 0},
+        {20, 14.266666666666667, 0},
+        {25, 14.633333333333334, 0},
+        {27.83333333333333, 14.766666666666666, 0}
     };
 
     std::vector<Point3D> controlPointsBezier_3
     {
-        {2.783333333333333, 1.4766666666666666, 0},
-        {3.066666666666667, 1.49, 0},
-        {3.1333333333333337, 1.48, 0},
-        {3.491666666666667, 1.455, 0},
+        {27.83333333333333, 14.766666666666666, 0},
+        {30.66666666666667, 14.9, 0},
+        {31.333333333333337, 14.8, 0},
+        {34.91666666666667, 14.55, 0},
     };
 
     std::vector<Point3D> controlPointsBezier_4
     {
-        {3.491666666666667, 1.455, 0},
-        {3.85, 1.43, 0},
-        {4.5, 1.39, 0},
-        {5, 1.2, 0},
+        {34.91666666666667, 14.55, 0},
+        {38.5, 14.3, 0},
+        {45, 13.9, 0},
+        {50, 12, 0},
     };
 
     // Нарущаем непрерывность в точках соединения Безье Кривых
-    controlPointsBezier_1[1].y += 1 * 0.09;
-    controlPointsBezier_2[1].y += - 0.0 * 0.0;
-    controlPointsBezier_3[1].y += 1 * 0.09;
-    controlPointsBezier_4[1].y += 1 * 0.09;
+    controlPointsBezier_1[1].y += 1 * 0.9;
+    controlPointsBezier_2[1].y += -1 * 1.3;
+    controlPointsBezier_3[1].y += 1 * 0.9;
+    controlPointsBezier_4[1].y += 1 * 0.9;
 
     const std::vector<double> weightsBezierCurves(controlPointsBezier_1.size(), 1);   // Весовые коэффициенты контрольных точек
 
@@ -213,6 +214,13 @@ MainWindow::MainWindow(QWidget *parent)
     canvas.drawCurve(bezier_2, "Безье 2", QColor(20, 200, 30));
     canvas.drawCurve(bezier_3, "Безье 3", QColor(20, 100, 30));
     canvas.drawCurve(bezier_4, "Безье 4", QColor(20, 50, 30));
+
+
+    UsefulUtils::outNURBSPoints(bezier_1, "bezier_1.txt");
+    UsefulUtils::outNURBSPoints(bezier_2, "bezier_2.txt");
+    UsefulUtils::outNURBSPoints(bezier_3, "bezier_3.txt");
+    UsefulUtils::outNURBSPoints(bezier_4, "bezier_4.txt");
+
     //canvas.drawDefiningPolygon(bezier_1.getControlPoints(), "", QColor(20, 150, 30), Qt::DashLine);
     //canvas.drawDefiningPolygon(bezier_2.getControlPoints(), "", QColor(20, 200, 30), Qt::DashLine);
     //canvas.drawDefiningPolygon(bezier_3.getControlPoints(), "", QColor(20, 250, 30), Qt::DashLine);
@@ -221,17 +229,30 @@ MainWindow::MainWindow(QWidget *parent)
     // 3. Соединяем B-сплайны
 
     std::vector<Curve> bezierCurves {bezier_1, bezier_2, bezier_3, bezier_4};
-
     MergeCurves merge;
     bezierCurves = merge.attachAllBezierCurves(originalCurve);
 
-    /*
     for (const auto& bezierCurve: bezierCurves)
     {
         canvas.drawCurve(bezierCurve, "", QColor(20, 0, 230));
         canvas.drawDefiningPolygon(bezierCurve.getControlPoints(), "", QColor(20, 150, 30));
     }
-    */
+
+    Curve merdgedCurve = UsefulUtils::bezierCurvesToNURBSCurve(bezierCurves, DEGREE, CURVE_NUM_POINTS);
+
+    UsefulUtils::outNURBSPoints(merdgedCurve, "mergedCurve.txt");
+
+
+    qDebug() << "До:\n"
+             << "Кривизна:" << Metrics::calcCurveCurvature(originalCurve) << '\n'
+             << "Метрика Хаусдорфа:" << Metrics::calcHausdorffMetric(originalCurve, merdgedCurve) << '\n';
+
+    qDebug() << "После:\n"
+             << "Кривизна:" << Metrics::calcCurveCurvature(merdgedCurve)
+             << '\n';
+
+    qDebug() << "Квадратичная разность:" << Metrics::calcQuadraticDifference(originalCurve, merdgedCurve);
+
     /*
     Curve merdgedCurve = UsefulUtils::bezierCurvesToNURBSCurve(bezierCurves, DEGREE, CURVE_NUM_POINTS);
 
@@ -242,10 +263,10 @@ MainWindow::MainWindow(QWidget *parent)
     UsefulUtils::checkCurveBreakPoint(merdgedCurve, 0.55);
     UsefulUtils::checkCurveBreakPoint(merdgedCurve, 0.6678);
     UsefulUtils::checkAllCurveBreaks(merdgedCurve);
-}
 */
+}
 
-
+/*
 // Соединение кривых Безье с помощью метода множителей Лагранжа
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -583,6 +604,6 @@ MainWindow::MainWindow(QWidget *parent)
     //checkContinuityTwoCurves(bezierCurves[0], bezierCurves[1]);
     //checkContinuityTwoCurves(bezierCurves[1], bezierCurves[2]);
     //checkContinuityTwoCurves(bezierCurves[2], bezierCurves[3]);
-}
+//}
 
 MainWindow::~MainWindow() { delete ui; }

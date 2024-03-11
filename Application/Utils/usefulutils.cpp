@@ -157,9 +157,9 @@ std::vector<Curve> UsefulUtils::splittingСurveIntoBezierCurves(const Curve& ori
 }
 
 // Запись точек кривой в файл
-void UsefulUtils::outNURBSPoints(const Curve& curve)
+void UsefulUtils::outNURBSPoints(const Curve& curve, const std::string& fileName)
 {
-    std::ofstream outFile("NURBSPoints.txt");
+    std::ofstream outFile(fileName);
     if (outFile.is_open())
     {
         for (const auto& curvePoints: curve.getCurvePoints())

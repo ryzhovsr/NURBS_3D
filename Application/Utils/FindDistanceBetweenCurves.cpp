@@ -84,7 +84,7 @@ CurvePoint FindDistanceBetweenCurves::findPointNURBS(const Curve &curve, const P
     int numRealRangeKnots = static_cast<int>(controlPoints.size()) - degree + 1;  // Кол-во узлов реального диапазона узл. вектора
     std::vector<CurvePoint> foundPoints(numRealRangeKnots - 1);   // Массив ближайших/дальних точек из разных спанов
 
-    std::vector<double> pointsRealSpans = calcPointsRealSpan(nodalVector, degree);    // Спаны реального диапазона узлового вектора
+    std::vector<double> pointsRealSpans = calcPointsRealSpan(nodalVector, degree);
     std::vector<double> cosines(pointsRealSpans.size() - 1, 1);    // Массив косинусов для каждой точки
 
     for (size_t i = 0; i < pointsRealSpans.size() - 1; ++i) // Итерируемся по спанам, начиная с нулевого

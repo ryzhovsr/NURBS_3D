@@ -22,7 +22,7 @@ public:
     static std::vector<Curve> splittingСurveIntoBezierCurves(const Curve& originalCurve);
 
     // Запись точек кривой в файл
-    static void outNURBSPoints(const Curve& curve);
+    static void outNURBSPoints(const Curve& curve, const std::string& fileName);
 };
 
 
