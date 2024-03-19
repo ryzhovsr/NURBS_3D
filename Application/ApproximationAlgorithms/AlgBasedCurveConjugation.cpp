@@ -62,18 +62,21 @@ void AlgBasedCurveConjugation::addNodalPoints(Curve &curve) const
     std::vector<double> nodalVector = curve.getNodalVector();
     int numKnots = static_cast<int>(nodalVector.size());
 
-    int numNewNodes = (degree - 1) * (numRealRangeKnots - 2);   // "-1" не берём уже имеющиеся узлы; "-2" не берём граничные узлы равные 0 и 1
-    std::vector<double> newNodesNodalVector;    // Новые узлы для нового узлового вектора
-
+    // "-1" не берём уже имеющиеся узлы; "-2" не берём граничные узлы равные 0 и 1
+    int numNewNodes = (degree - 1) * (numRealRangeKnots - 2);
+    // Новые узлы для нового узлового вектора
+    std::vector<double> newNodesNodalVector;
 
     // Начало и конец реального диапазона узл. вектора
     int realRangeStart = degree;
     int realRangeEnd = numKnots - degree - 1;
-    int numNotBoundaryNodals = 0; // Количество не граничных узлов (не равных 0 и 1)
+    // Количество не граничных узлов (не равных 0 и 1)
+    int numNotBoundaryNodals = 0;
 
     for (int i = realRangeStart; i < realRangeEnd; ++i)
     {
-        if (nodalVector[i] != 0 && nodalVector[i] != 1) // Пропускаем границы реального диапазона
+        // Пропускаем границы реального диапазона
+        if (nodalVector[i] != 0 && nodalVector[i] != 1)
             ++numNotBoundaryNodals;
     }
 
@@ -89,7 +92,8 @@ void AlgBasedCurveConjugation::addNodalPoints(Curve &curve) const
 
         while (counter < numNewNodes / numNotBoundaryNodals)
         {
-            if (nodalVector[i] == 0 || nodalVector[i] == 1) // Пропускаем границы реального диапазона
+            // Пропускаем границы реального диапазона
+            if (nodalVector[i] == 0 || nodalVector[i] == 1)
                 break;
 
             newNodesNodalVector.push_back(nodalVector[i]);
@@ -158,7 +162,6 @@ void AlgBasedCurveConjugation::addNodalPoints(Curve &curve) const
 Curve AlgBasedCurveConjugation::redefineCurve(const std::vector<Point3D>& controlPoints, const std::vector<double>& nodalVector, int degree, int numParameters) const
 {
     std::vector<double> weights(controlPoints.size(), 1);
-
     Curve newCurve(controlPoints, weights, degree, numParameters);
 
     if (!nodalVector.empty()) // Если новый узловой вектор пустой, то заполним его равномерно
@@ -220,14 +223,15 @@ Curve AlgBasedCurveConjugation::attachCurve(const Curve &curve1, const Curve &cu
     std::vector<Point3D> controlPointsSecondCurve = curve2.getControlPoints();
     int numControlPoints = 0; // Кол-во контрольных точек
 
-    if (curve1.getControlPoints().size() != curve2.getControlPoints().size()) // Проверка на одинаковое кол-во контрольных точек кривых (степень кривых Безье должны быть равны)
+    // Проверка на одинаковое кол-во контрольных точек кривых (степень кривых Безье должны быть равны)
+    if (curve1.getControlPoints().size() != curve2.getControlPoints().size())
         qDebug() << "Error! attachCurvesUsualMethod: кривые Безье имеют разное кол-во контрольных точек";
     else
         numControlPoints = static_cast<int>(curve1.getControlPoints().size());
 
     std::vector<Point3D> derivsFirstCurve(numControlPoints);    // Производные первой кривой
     std::vector<Point3D> negDerivsFirstCurve(numControlPoints); // Отрицательные дельты контрольных точек первой кривой
-    int startIndexFirstCurve = numControlPoints - 1;          // Стартовый индекс начинается с конца
+    int startIndexFirstCurve = numControlPoints - 1;            // Стартовый индекс начинается с конца
 
     for (int i = numControlPoints - 1; i >= 0 ; --i) // Находим дельты для первой кривой
     {
@@ -264,7 +268,8 @@ Curve AlgBasedCurveConjugation::attachCurve(const Curve &curve1, const Curve &cu
         }
     }
 
-    if (fixateStartEndPoints) // Если начальная и конечная точка фиксированная
+    // Если начальная и конечная точка фиксированная
+    if (fixateStartEndPoints)
     { // Изменяем матрицу коэффициентов
         coefficients[0][0] = 1;
         coefficients[numControlPoints * 2 - 1][numControlPoints * 2 - 1] = 1;

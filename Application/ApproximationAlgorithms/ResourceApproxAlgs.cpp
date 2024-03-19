@@ -13,7 +13,10 @@ ResourceApproxAlgs::~ResourceApproxAlgs()
 void ResourceApproxAlgs::setStrategy(IApproxAlgs *approxAlgorithm)
 {
     if (_approxAlgorithm != nullptr)
+    {
         delete _approxAlgorithm;
+    }
+
     _approxAlgorithm = approxAlgorithm;
 }
 
