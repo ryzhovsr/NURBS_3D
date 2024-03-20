@@ -2,9 +2,7 @@
 #include "ui_mainwindow.h"
 #include "Plotting/Graph2D.h"
 #include "Curve3d/Point3d.h"
-#include "Curve3d/CalcCurve.h"
 #include "Utils/MergeCurves.h"
-#include "Utils/MathUtils.h"
 #include "ApproximationAlgorithms/Metrics.h"
 #include "Utils/UsefulUtils.h"
 

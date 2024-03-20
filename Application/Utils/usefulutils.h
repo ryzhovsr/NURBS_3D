@@ -2,27 +2,28 @@
 
 #include "Curve3D/Curve.h"
 
-class UsefulUtils
+namespace UsefulUtils
 {
-public:
-
     // Переводит вектор кривых Безье в одну кривую NURBS
-    static Curve bezierCurvesToNURBSCurve(const std::vector<Curve> &bezierCurves, int degree, int curveNumPoints);
+    Curve bezierCurvesToNURBSCurve(const std::vector<Curve> &bezierCurves, int degree, int curveNumPoints);
 
     // Проверка непрерывности всех точек в одной в кривой
-    static void checkAllCurveBreaks(const Curve& curve);
+    void checkAllCurveBreaks(const Curve& curve);
 
     // Проверяет конкретную точки в кривой на непрерывность
-    static void checkCurveBreakPoint(Curve& curve, double parametr);
+    void checkCurveBreakPoint(Curve& curve, double parametr);
 
     // Проверка непрерывности двух Безье кривых
-    static void checkContinuityTwoCurves(const Curve& firstBezierCurve, const Curve& secondBezierCurve);
+    void checkContinuityTwoCurves(const Curve& firstBezierCurve, const Curve& secondBezierCurve);
 
     // Разбивает NURBS кривую на кривые Безье
-    static std::vector<Curve> splittingСurveIntoBezierCurves(const Curve& originalCurve);
+    std::vector<Curve> splittingСurveIntoBezierCurves(const Curve& originalCurve);
 
     // Запись точек кривой в файл
-    static void outNURBSPoints(const Curve& curve, const std::string& fileName);
+    void outNURBSPoints(const Curve& curve, const std::string& fileName);
+
+    // Запись контрольных точек в файл
+    void outControlPoints(const std::vector<Point3D>& controlPoints, const std::string& fileName);
 };
 
 

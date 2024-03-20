@@ -276,7 +276,8 @@ namespace Impl
     }
 
     // Фиксирует первую и последнюю точки кривых и их первые произнодеые (зануление определенных столбцов и строк у матрицы коэффициентов). По умолчанию фиксируются все 4 точки
-    static void fixPointAtCurve(std::vector<std::vector<double>>& coefficientMatrix, size_t numberEpsilons, size_t numberBasisFuncs, bool fixStartPoint = true, bool fixEndPoint = true, bool fixFirstDivStartPoint = true, bool fixFirstDivEndPoint = true)
+    static void fixPointAtCurve(std::vector<std::vector<double>>& coefficientMatrix, size_t numberEpsilons, size_t numberBasisFuncs,
+                                bool fixStartPoint = true, bool fixEndPoint = true, bool fixFirstDivStartPoint = true, bool fixFirstDivEndPoint = true)
     {
         const size_t MATRIX_SIZE = coefficientMatrix.size();
 
@@ -440,7 +441,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(const Curve& curve)
     Impl::fillCoefficientsMatrix(coefficientMatrix, basisFuncs, NUMBER_EPSILONS, NUMBER_BREAK_POINTS);
 
     // Фиксируем первую и последнюю точки и их первые производные
-    Impl::fixPointAtCurve(coefficientMatrix, NUMBER_EPSILONS, NUMBER_BASIS_FUNCS, true, true, true, true);
+    Impl::fixPointAtCurve(coefficientMatrix, NUMBER_EPSILONS, NUMBER_BASIS_FUNCS, true, true, false, false);
 
     // Контрольные точки кривых Безье
     std::vector<std::vector<Point3D>> controlPointsBezierCurves(NUMBER_BEZIER_CURVES);

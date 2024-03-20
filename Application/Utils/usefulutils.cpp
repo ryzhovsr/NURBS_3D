@@ -174,3 +174,22 @@ void UsefulUtils::outNURBSPoints(const Curve& curve, const std::string& fileName
     }
 }
 
+// Запись контрольных точек в файл
+void UsefulUtils::outControlPoints(const std::vector<Point3D>& controlPoints, const std::string& fileName)
+{
+    std::ofstream outFile(fileName);
+    if (outFile.is_open())
+    {
+        for (const auto& curvePoints: controlPoints)
+        {
+            outFile << curvePoints.x << " " << curvePoints.y << " " << curvePoints.z << '\n';
+        }
+        outFile.close();
+    }
+    else
+    {
+        qDebug() << "outControlPoints. Unable to open file for writing!";
+    }
+}
+
+

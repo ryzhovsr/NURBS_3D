@@ -7,7 +7,8 @@
 class IMatrixOperations;
 using IMatrixOperationsPtr = std::shared_ptr<IMatrixOperations>;
 
-enum OperationClass // Содержит названия библиотек для работы с матрицами
+// Содержит названия библиотек для работы с матрицами
+enum OperationClass
 {
     eigen
 };
@@ -28,5 +29,6 @@ public:
     // Возвращяет определитель матрицы
     virtual double getMatrixDet(const vector2D &vec2D) = 0;
 
+    // Возвращает указатель на интерфейс взаимодействия с матрицами
     static IMatrixOperationsPtr GetMatrixOperationsClass (OperationClass className);
 };
