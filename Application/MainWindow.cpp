@@ -195,6 +195,8 @@ MainWindow::MainWindow(QWidget *parent)
         {50, 12, 0},
     };
 
+
+
     // Нарущаем непрерывность в точках соединения Безье Кривых
     controlPointsBezier_1[1].y += 1 * 0.9;
     controlPointsBezier_2[1].y += -1 * 1.3;
@@ -240,6 +242,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     UsefulUtils::outNURBSPoints(merdgedCurve, "mergedCurve.txt");
 
+    // Для Маврина расчёт новой кривизны
+    qDebug() << "Кривизна старая: " << Metrics::calcNewCurveCurvature(originalCurve) << '\n'
+             << "Кривизна новая: " << Metrics::calcNewCurveCurvature(merdgedCurve) << '\n';
 
     qDebug() << "До:\n"
              << "Кривизна:" << Metrics::calcCurveCurvature(originalCurve) << '\n'

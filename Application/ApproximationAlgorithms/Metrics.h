@@ -10,6 +10,7 @@ public:
     // Рассчитывает кривизну кривой. Кривизна рассчитывается методом правых прямоугольников
     static double calcCurveCurvature(const std::vector<CurvePoint> &curvePoints);
     static double calcCurveCurvature(const Curve &curve);
+    static double calcNewCurveCurvature(const Curve &curve); // Более правильная формула
 
     // Рассчитывает метрику Хаусдорфа между двух кривых
     static double calcHausdorffMetric(const Curve &Curve1, const Curve &Curve2);

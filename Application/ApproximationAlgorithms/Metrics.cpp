@@ -26,6 +26,42 @@ double Metrics::calcCurveCurvature(const Curve &curve)
     return calcCurveCurvature(curve.getCurvePoints());
 }
 
+double Metrics::calcNewCurveCurvature(const Curve &curve)
+{
+    double curvature = 0;
+
+    // Рассчитывает определитель 2 на 2
+    auto calcDelim = [](double leftUpper, double rightUpper, double leftDown, double rightDown) -> double
+    {
+        return leftUpper * leftDown - rightUpper * rightDown;
+    };
+
+    for (const auto& point: curve.getCurvePoints())
+    {
+        auto firstDeriv = point.derivs[1];
+        auto secondDeriv = point.derivs[2];
+
+        double firstDelimeter = calcDelim(firstDeriv.y, firstDeriv.z, secondDeriv.y, secondDeriv.z);
+        double secondDelimeter = calcDelim(firstDeriv.z, firstDeriv.x, secondDeriv.z, secondDeriv.x);
+        double thirdDelimeter = calcDelim(firstDeriv.x, firstDeriv.y, secondDeriv.x, secondDeriv.y);
+
+        // Значения в квадрате
+        double firstDelimiterSq = firstDelimeter * firstDelimeter;
+        double secondDelimeterSq = secondDelimeter * secondDelimeter;
+        double thirdDelimeterSq = thirdDelimeter * thirdDelimeter;
+
+        double numerator = sqrt(firstDelimiterSq + secondDelimeterSq + thirdDelimeterSq);
+
+        // Вектор в знаминателе
+        double vecDenominator = sqrt(firstDeriv.x * firstDeriv.x + firstDeriv.y * firstDeriv.x + firstDeriv.z * firstDeriv.x);
+        double denominator = vecDenominator * vecDenominator * vecDenominator;
+
+        curvature += numerator / denominator;
+    }
+
+    return curvature;
+}
+
 double Metrics::calcHausdorffMetric(const Curve &Curve1, const Curve &Curve2)
 {
     double distanceFromFirstCurve = FindDistanceBetweenCurves::findMaxLenBetweenCurves(Curve1, Curve2);    // Расстояние от первой кривой ко второй кривой
