@@ -22,8 +22,14 @@ namespace UsefulUtils
     // Запись точек кривой в файл
     void outNURBSPoints(const Curve& curve, const std::string& fileName);
 
+    // Запись производных кривой в файл
+    void outCurveDerivs(const Curve& curve, int orderDeriv, const std::string& fileName);
+
     // Запись контрольных точек в файл
     void outControlPoints(const std::vector<Point3D>& controlPoints, const std::string& fileName);
+
+    // Загрузка контрольных точек из файла
+    std::vector<Point3D> loadControlPoints(const std::string& fileName);
 };
 
 

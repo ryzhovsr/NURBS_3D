@@ -2,6 +2,7 @@
 #include "Curve3D/CalcCurve.h"
 #include "Utils/MathUtils.h"
 #include <fstream>
+#include <sstream>
 
 // Переводит вектор кривых Безье в одну кривую NURBS
 Curve UsefulUtils::bezierCurvesToNURBSCurve(const std::vector<Curve> &bezierCurves, int degree, int curveNumPoints)
@@ -57,7 +58,7 @@ void UsefulUtils::checkAllCurveBreaks(const Curve& curve)
             double rightLength = sqrt(rightPoint.derivs[j].x * rightPoint.derivs[j].x + rightPoint.derivs[j].y * rightPoint.derivs[j].y + rightPoint.derivs[j].z * rightPoint.derivs[j].z);
             double diff = abs(leftLength - rightLength);
 
-            if (diff > 0.01)
+            if (diff > 0.00001)
             {
                 qDebug() << "-----------------Разрыв!!------------------" << j << "-й производной, в точке " << curvePoint[i].parameter << " и diff = " << diff;
             }
@@ -192,4 +193,67 @@ void UsefulUtils::outControlPoints(const std::vector<Point3D>& controlPoints, co
     }
 }
 
+// Запись контрольных точек в файл
+void UsefulUtils::outCurveDerivs(const Curve& curve, int orderDeriv, const std::string& fileName)
+{
+    if (curve.getDegree() < orderDeriv)
+    {
+        return;
+    }
 
+    std::ofstream outFile(fileName);
+
+    if (outFile.is_open())
+    {
+        for (const auto& curvePoints: curve.getCurvePoints())
+        {
+            outFile << curvePoints.derivs[orderDeriv].x << " " << curvePoints.derivs[orderDeriv].y << " " << curvePoints.derivs[orderDeriv].z << '\n';
+        }
+        outFile.close();
+    }
+    else
+    {
+        qDebug() << "outNURBSPoints. Unable to open file for writing!";
+    }
+}
+
+std::vector<Point3D> UsefulUtils::loadControlPoints(const std::string &fileName)
+{
+    std::ifstream In(fileName);
+
+    // Если ошибка открытия файла
+    if(!In)
+        return {};
+
+    std::vector<Point3D> controlPoints;
+
+    while (!In.eof())
+    {
+        std::string str, temp;
+        std::stringstream ss;
+        getline (In, str);
+        ss << str;
+        double value;
+        // Для хранения координат точки
+        std::vector<double> tempVec;
+
+        while (!ss.eof())
+        {
+            ss >> temp;
+            std::stringstream(temp) >> value;
+            tempVec.push_back(value);
+        }
+
+        // Если спарсили 3 координаты
+        if (tempVec.size() == 3)
+        {
+            Point3D point(tempVec[0], tempVec[1], tempVec[2]);
+            controlPoints.push_back(point);
+        }
+    }
+
+    // Закрываем файл
+    In.close();
+
+    return controlPoints;
+}
