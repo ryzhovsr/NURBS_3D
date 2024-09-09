@@ -638,19 +638,6 @@ MainWindow::MainWindow(QWidget *parent)
     UsefulUtils::outNURBSPoints(originalCurve, "newControlPoints.txt");
 
     //canvas.drawHodographDeriv(originalCurve, 2);
-
-
-    std::vector<CurvePoint> curvePoint = originalCurve.getCurvePoints();
-    CurvePoint leftPoint, rightPoint;
-
-    double leftParameter = curvePoint[500].parameter - 0.0000000001;
-
-    CalcCurve::calcCurvePointAndDerivs(originalCurve, leftPoint, leftParameter);
-
-    for (int j = 0; j < originalCurve.getCurvePoints()[0].derivs.size(); ++j)
-    {
-        double leftLength = sqrt(leftPoint.derivs[j].x * leftPoint.derivs[j].x + leftPoint.derivs[j].y * leftPoint.derivs[j].y + leftPoint.derivs[j].z * leftPoint.derivs[j].z);
-    }
 }
 
 
