@@ -58,7 +58,7 @@ void UsefulUtils::checkAllCurveBreaks(const Curve& curve)
             double rightLength = sqrt(rightPoint.derivs[j].x * rightPoint.derivs[j].x + rightPoint.derivs[j].y * rightPoint.derivs[j].y + rightPoint.derivs[j].z * rightPoint.derivs[j].z);
             double diff = abs(leftLength - rightLength);
 
-            if (diff > 0.00001)
+            if (diff > 0.001)
             {
                 qDebug() << "-----------------Разрыв!!------------------" << j << "-й производной, в точке " << curvePoint[i].parameter << " и diff = " << diff;
             }

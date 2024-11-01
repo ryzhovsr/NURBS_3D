@@ -270,7 +270,7 @@ MainWindow::MainWindow(QWidget *parent)
 */
 //}
 
-/*
+
 // Соединение кривых Безье с помощью метода множителей Лагранжа
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -565,9 +565,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     Curve merdgedCurve = UsefulUtils::bezierCurvesToNURBSCurve(bezierCurves, DEGREE, CURVE_NUM_POINTS);
 
-    UsefulUtils::outNURBSPoints(originalCurve);
-    UsefulUtils::outNURBSPoints(merdgedCurve);
-
     qDebug() << "До:\n"
              << "Кривизна:" << Metrics::calcCurveCurvature(originalCurve) << '\n'
              << "Метрика Хаусдорфа:" << Metrics::calcHausdorffMetric(originalCurve, merdgedCurve) << '\n';
@@ -579,8 +576,17 @@ MainWindow::MainWindow(QWidget *parent)
     qDebug() << "Квадратичная разность:" << Metrics::calcQuadraticDifference(originalCurve, merdgedCurve);
 
     //merdgedCurve.setNodalVector(NODAL_VECTOR);
+
+    Curve newCurve(CONTROL_POINTS, WEIGHTS, DEGREE + 1, CURVE_NUM_POINTS);
+
     canvas.drawCurve(merdgedCurve, "", QColor(200, 0, 0));
-    //checkAllCurveBreaks(merdgedCurve);
+    canvas.drawCurve(newCurve, "", QColor(1, 0, 0));
+
+    qDebug() << "6:\n"
+             << "Кривизна:" << Metrics::calcCurveCurvature(newCurve) << '\n'
+             << "Метрика Хаусдорфа:" << Metrics::calcHausdorffMetric(originalCurve, newCurve) << '\n';
+
+    qDebug() << "Квадратичная разность:" << Metrics::calcQuadraticDifference(originalCurve, newCurve);
 
     /*
     for (size_t i = 0; i != 50; i += 5)
@@ -608,8 +614,9 @@ MainWindow::MainWindow(QWidget *parent)
     //checkContinuityTwoCurves(bezierCurves[0], bezierCurves[1]);
     //checkContinuityTwoCurves(bezierCurves[1], bezierCurves[2]);
     //checkContinuityTwoCurves(bezierCurves[2], bezierCurves[3]);
-//}
+}
 
+/*
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -639,6 +646,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //canvas.drawHodographDeriv(originalCurve, 2);
 }
+*/
 
 
 MainWindow::~MainWindow() { delete ui; }
