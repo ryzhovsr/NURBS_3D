@@ -5,20 +5,17 @@
 
 double Metrics::calcCurveCurvature(const std::vector<CurvePoint> &curvePoints)
 {
-    Point3D secondDeriv;
-    double square = 0, height = 0;  // Общая площадь и высота прямоугольника соответственно
-    double split = curvePoints[1].parameter; // Основнаие прямоугольника
+    double sum = 0;
 
-    for (int i = 0; i < curvePoints.size() - 1; ++i)
+    for (int i = 0; i != curvePoints.size(); ++i)
     {
-        secondDeriv.x = (curvePoints[i].derivs[2].x * curvePoints[i].derivs[2].x);
-        secondDeriv.y = (curvePoints[i].derivs[2].y * curvePoints[i].derivs[2].y);
-        secondDeriv.z = (curvePoints[i].derivs[2].z * curvePoints[i].derivs[2].z);
-        height = sqrt(secondDeriv.x * secondDeriv.x + secondDeriv.y * secondDeriv.y + secondDeriv.z * secondDeriv.z);
-        square += height * split;
+        const std::vector<Point3D>& derivs = curvePoints[i].derivs;
+        double numerator = derivs[1].cross(derivs[2]).magnitude();
+        double denomenator = std::pow(derivs[1].magnitude(), 3);
+        sum += numerator / denomenator * curvePoints[i].parameter;
     }
 
-    return square;
+    return sum;
 }
 
 double Metrics::calcCurveCurvature(const Curve &curve)
@@ -60,6 +57,22 @@ double Metrics::calcNewCurveCurvature(const Curve &curve)
     }
 
     return curvature;
+}
+
+double Metrics::calcTorsion(const Curve& iCurve)
+{
+    double sum = 0;
+    const auto& curvePoints = iCurve.getCurvePoints();
+
+    for (int i = 0; i != curvePoints.size(); ++i)
+    {
+        const std::vector<Point3D>& derivs = curvePoints[i].derivs;
+        double numerator = derivs[1].cross(derivs[2]).dot(derivs[3]);
+        double denomenator = std::pow((derivs[1].cross(derivs[2])).magnitude(), 2);
+        sum += numerator / denomenator * curvePoints[i].parameter;
+    }
+
+    return sum;
 }
 
 double Metrics::calcHausdorffMetric(const Curve &Curve1, const Curve &Curve2)

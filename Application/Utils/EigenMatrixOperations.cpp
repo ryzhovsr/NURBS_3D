@@ -1,6 +1,6 @@
 #include "eigenmatrixoperations.h"
 #include "Curve3d/Point3d.h"
-#include <Eigen/Dense>
+#include <../Dependencies/include/eigen/Eigen/Dense>
 
 using namespace Eigen;
 

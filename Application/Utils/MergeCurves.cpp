@@ -441,7 +441,7 @@ std::vector<Curve> MergeCurves::attachAllBezierCurves(const Curve& curve)
     Impl::fillCoefficientsMatrix(coefficientMatrix, basisFuncs, NUMBER_EPSILONS, NUMBER_BREAK_POINTS);
 
     // Фиксируем первую и последнюю точки и их первые производные
-    Impl::fixPointAtCurve(coefficientMatrix, NUMBER_EPSILONS, NUMBER_BASIS_FUNCS, true, true, true, true);
+    Impl::fixPointAtCurve(coefficientMatrix, NUMBER_EPSILONS, NUMBER_BASIS_FUNCS, false, false, false, false);
 
     // Контрольные точки кривых Безье
     std::vector<std::vector<Point3D>> controlPointsBezierCurves(NUMBER_BEZIER_CURVES);

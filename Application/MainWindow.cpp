@@ -1,11 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "Plotting/Graph2D.h"
-#include "Curve3d/Point3d.h"
 #include "Utils/MergeCurves.h"
 #include "ApproximationAlgorithms/Metrics.h"
 #include "Utils/UsefulUtils.h"
-#include "Curve3D/CalcCurve.h"
 
 // В консоль пишет координаты X и Y у курсора при дабл клике
 void MainWindow::doubleClickCanvas(QMouseEvent *event)
@@ -567,26 +565,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     qDebug() << "До:\n"
              << "Кривизна:" << Metrics::calcCurveCurvature(originalCurve) << '\n'
-             << "Метрика Хаусдорфа:" << Metrics::calcHausdorffMetric(originalCurve, merdgedCurve) << '\n';
-
-    qDebug() << "После:\n"
-             << "Кривизна:" << Metrics::calcCurveCurvature(merdgedCurve)
-             << '\n';
-
-    qDebug() << "Квадратичная разность:" << Metrics::calcQuadraticDifference(originalCurve, merdgedCurve);
+             << "Торсионность:" << Metrics::calcTorsion(originalCurve) << '\n';
 
     //merdgedCurve.setNodalVector(NODAL_VECTOR);
 
-    Curve newCurve(CONTROL_POINTS, WEIGHTS, DEGREE + 1, CURVE_NUM_POINTS);
-
-    canvas.drawCurve(merdgedCurve, "", QColor(200, 0, 0));
-    canvas.drawCurve(newCurve, "", QColor(1, 0, 0));
-
-    qDebug() << "6:\n"
-             << "Кривизна:" << Metrics::calcCurveCurvature(newCurve) << '\n'
-             << "Метрика Хаусдорфа:" << Metrics::calcHausdorffMetric(originalCurve, newCurve) << '\n';
-
-    qDebug() << "Квадратичная разность:" << Metrics::calcQuadraticDifference(originalCurve, newCurve);
+    qDebug() << "После:\n"
+             << "Кривизна:" << Metrics::calcCurveCurvature(merdgedCurve) << '\n'
+             << "Торсионность:" << Metrics::calcTorsion(merdgedCurve) << '\n'
+             << "Метрика Хаусдорфа:" << Metrics::calcHausdorffMetric(originalCurve, merdgedCurve) << '\n'
+             << "Квадратичная разность:" << Metrics::calcQuadraticDifference(originalCurve, merdgedCurve) << '\n';
 
     /*
     for (size_t i = 0; i != 50; i += 5)
